@@ -1,5 +1,7 @@
 .vs/
 bin/
-obj/
 Properties/
 Modules/
+Publish/
+src/bin
+src/obj
