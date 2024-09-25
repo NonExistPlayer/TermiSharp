@@ -2,4 +2,5 @@
 bin/
 obj/
 Properties/
-e/
+Modules/
+.gitignore
