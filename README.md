@@ -12,7 +12,7 @@ I really like C#. That's why my first three projects are in C#.
 
 Now, about TermiSharp itself: TermiSharp and its modules are fully written in C#.
 
-I started working on this project on May 24, 2024 (if you believe the creation date of [TermiSharp.sln](../../TermiSharp.sln)). It turns out that it's been 5 months, but that's not true. I didn't work on the project for the entire months of July and June, so it's actually been 3 months.
+I started working on this project on May 24, 2024 (if you believe the creation date of [TermiSharp.sln](TermiSharp.sln)). It turns out that it's been 5 months, but that's not true. I didn't work on the project for the entire months of July and June, so it's actually been 3 months.
 
 Help with developing the project is welcome: nonexistplayer@gmail.com.
 
