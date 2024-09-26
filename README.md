@@ -17,7 +17,7 @@ I started working on this project on May 24, 2024 (if you believe the creation d
 Help with developing the project is welcome: nonexistplayer@gmail.com.
 
 ## Getting Started
-Attention! Your OS must be Windows 7 or higher.
+**Attention! Your OS must be Windows 7 or higher.**
 
 It's recommended to use Windows Terminal (wt.exe) for more customization options.
 

@@ -1,7 +1,9 @@
 .vs/
-bin/
-Properties/
-Modules/
 Publish/
+src/.vs
 src/bin
 src/obj
+src/Properties
+modules/LunaPlayerAPI/.vs
+modules/LunaPlayerAPI/bin
+modules/LunaPlayerAPI/obj

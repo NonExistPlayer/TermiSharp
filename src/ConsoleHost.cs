@@ -33,14 +33,8 @@ public partial class ConsoleHost : IRunnable
     public Config Config { get; private set; }
     public string[] ExePath => Environment.GetEnvironmentVariable("PATH").Split(';').Concat([CurrentPath]).ToArray();
     public Dictionary<string, string> Variables = [];
-    public BetterReadLine.ReadLine ReadLine = new()
-    {
-        AutoCompletionHandler = new AutoCompleteHandler(),
-        HighlightHandler = new HighlightHandler(),
-        HistoryHandler = new HistoryHandler(),
-        HintHandler = new HintHandler(),
-    };
-    public const string Version = "1.0";
+    public BetterReadLine.ReadLine ReadLine;
+    public const string Version = "1.0.1";
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     static extern uint GetLongPathName(string shortPath, StringBuilder longPath, int longPathLength);
 
@@ -60,10 +54,20 @@ public partial class ConsoleHost : IRunnable
         {
             Config = new();
         }
+        ReadLine = new()
+        {
+            AutoCompletionHandler = new AutoCompleteHandler(),
+            HighlightHandler = new HighlightHandler(),
+            HistoryHandler = new HistoryHandler(),
+            HintHandler = new HintHandler(),
+        };
         AppDomain.CurrentDomain.ProcessExit += (s, e) =>
         {
-            Config.FirstStart = false;
+            if (Config.FirstStart)
+                Config.FirstStart = false;
             Config.Write();
+            if (!Config.DisableHistoryFile)
+                File.WriteAllLines($"{Path.GetDirectoryName(Environment.ProcessPath)}\\.history", HistoryHandler.History);
         };
         if (Config.FirstStart)
         {
@@ -81,9 +85,12 @@ public partial class ConsoleHost : IRunnable
             }
             Terminal.Writeln("Type `help` to get list of commands.", ConsoleColor.White);
         }
+        foreach (string module in Config.AutoModulesInit)
+            HandleCommand($"module init {module}");
         MainLoop();
     }
     public void RunAsync() => Task.Run(Run);
+
     void MainLoop()
     {
         while (IsRunning)
@@ -151,7 +158,6 @@ public partial class ConsoleHost : IRunnable
             catch { }
         }
     }
-
 
     public string? GetExePath(string fname)
     {
@@ -317,13 +323,16 @@ public partial class ConsoleHost : IRunnable
     }
     public void ModuleInit(string modulename)
     {
-        string firstPath = Path.GetDirectoryName(Environment.ProcessPath) + "\\Modules\\" + modulename + $"\\bin\\Debug\\net8.0\\{modulename}.dll";
+        string firstPath  = Path.GetDirectoryName(Environment.ProcessPath) + "\\Modules\\" + modulename + $"\\bin\\Debug\\net8.0\\{modulename}.dll";
         string secondPath = Path.GetDirectoryName(Environment.ProcessPath) + $"\\Modules\\{modulename}.dll";
+        string thirdPath  = Path.GetDirectoryName(Environment.ProcessPath) + $"\\Modules\\{modulename}\\{modulename}.dll";
         Assembly asm;
         if (File.Exists(firstPath))
             asm = Assembly.LoadFrom(firstPath);
         else if (File.Exists(secondPath))
             asm = Assembly.LoadFrom(secondPath);
+        else if (File.Exists(thirdPath))
+            asm = Assembly.LoadFrom(thirdPath);
         else if (File.Exists(modulename))
             asm = Assembly.LoadFrom(modulename);
         else
@@ -345,9 +354,13 @@ public partial class ConsoleHost : IRunnable
 
             IEnumerable<Type> types = method.GetParameters().Select(p => p.ParameterType);
             if (method.IsDefined(typeof(OverrideCommandAttribute), false))
-                SubCommands.Add(name, method.GetCustomAttributes<SubCommandAttribute>().Select(a => a.SubCommand).ToArray());
+            {
+                name = method.GetCustomAttribute<OverrideCommandAttribute>().Command;
+                Commands.Remove(name);
+            }
             if (method.IsDefined(typeof(SubCommandAttribute), false))
-                if (method.IsDefined(typeof(CustomCommandNameAttribute), false))
+                SubCommands.Add(name, method.GetCustomAttributes<SubCommandAttribute>().Select(a => a.SubCommand).ToArray());
+            if (method.IsDefined(typeof(CustomCommandNameAttribute), false))
                 name = method.GetCustomAttribute<CustomCommandNameAttribute>().CommandName;
             if (!Commands.ContainsKey(method.Name))
                 Commands.Add(name, new(null, (min, max), types.ToArray(), method));

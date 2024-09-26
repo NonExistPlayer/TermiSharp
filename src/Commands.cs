@@ -2,6 +2,10 @@
 using ConsoleTools.Frames;
 using System.Diagnostics;
 using System.Data;
+using System.Reflection;
+using System.Collections;
+using Microsoft.CodeAnalysis.Operations;
+using TermiSharp.ReadLine;
 
 #nullable disable warnings
 
@@ -18,12 +22,13 @@ partial class ConsoleHost
             foreach (string path in ExePath)
                 if (Directory.Exists(path))
                     foreach (string file in Directory.GetFiles(path))
-                        if (Path.GetFileName(file) == exe)
+                        if (Path.GetFileName(file) == exe + ".exe")
                             return true;
             return false;
         }
 
         SubCommands.Add("module", ["init", "list", "help"]);
+        SubCommands.Add("config", ["set", "get", "add", "rem", "list", "help"]);
         if (OperatingSystem.IsWindows() && ExeExists("winget"))
             SubCommands.Add("winget", ["install", "show", "source", "search",
             "list", "upgrade", "uninstall", "hash", "validate", "settings",
@@ -44,6 +49,8 @@ partial class ConsoleHost
         var RANGE = typeof(Range);
         var BOOL = typeof(bool);
         var TIME = typeof(DateTime);
+        
+        char sep = Path.DirectorySeparatorChar;
 
         string? INFO(string s)
         {
@@ -98,6 +105,130 @@ partial class ConsoleHost
                 Terminal.Writeln("Invalid expression.", ConsoleColor.Red);
             }
         }, (1, 255)));
+        Commands.Add("config", new((arg) =>
+        {
+            switch (arg[0].ToString())
+            {
+                case "set":
+                    if (arg.Length != 3)
+                    {
+                        Terminal.Writeln("Excepted 2 arguments.", ConsoleColor.Red);
+                        return;
+                    }
+                    string name = arg[1].ToString();
+                    object value = arg[2];
+                    FieldInfo? key = typeof(Config).GetField(name, BindingFlags.Public | BindingFlags.Instance);
+                    if (key == null)
+                    {
+                        Terminal.Writeln("Specified parameter does not exist.", ConsoleColor.Red);
+                        return;
+                    }
+                    if (int.TryParse(arg[2].ToString(), out int iResult))
+                        value = iResult;
+                    else if (bool.TryParse(arg[2].ToString(), out bool bResult))
+                        value = bResult;
+                    key.SetValue(Config, value);
+                    break;
+                case "get":
+                    if (arg.Length != 2)
+                    {
+                        Terminal.Writeln("Excepted one more argument.", ConsoleColor.Red);
+                        return;
+                    }
+                    name = arg[1].ToString();
+                    key = typeof(Config).GetField(name, BindingFlags.Public | BindingFlags.Instance);
+                    if (key == null)
+                    {
+                        Terminal.Writeln("Specified parameter does not exist.", ConsoleColor.Red);
+                        return;
+                    }
+                    value = key.GetValue(Config);
+                    if (value is string[] arr)
+                        value = $"[{string.Join(", ", arr)}]";
+                    Terminal.Writeln(value.ToString(), ConsoleColor.White);
+                    break;
+                case "add":
+                    if (arg.Length != 3)
+                    {
+                        Terminal.Writeln("Excepted 2 arguments.", ConsoleColor.Red);
+                        return;
+                    }
+                    name = arg[1].ToString();
+                    value = arg[2];
+                    key = typeof(Config).GetField(name, BindingFlags.Public | BindingFlags.Instance);
+                    if (key == null)
+                    {
+                        Terminal.Writeln("Specified parameter does not exist.", ConsoleColor.Red);
+                        return;
+                    }
+                    if (int.TryParse(arg[2].ToString(), out iResult))
+                        value = iResult;
+                    else if (bool.TryParse(arg[2].ToString(), out bool bResult))
+                        value = bResult;
+                    object obj = key.GetValue(Config);
+                    if (obj is not string[])
+                    {
+                        Terminal.Writeln("Specified parameter is not array.", ConsoleColor.White);
+                        return;
+                    }
+                    string[] strings = (string[])obj;
+                    key.SetValue(Config, strings.Concat([value.ToString()]).ToArray());
+                    break;
+                case "rem":
+                    if (arg.Length != 3)
+                    {
+                        Terminal.Writeln("Excepted 2 arguments.", ConsoleColor.Red);
+                        return;
+                    }
+                    name = arg[1].ToString();
+                    if (!int.TryParse(arg[2].ToString(), out int ind))
+                    {
+                        Terminal.Writeln("The type is expected for argument2: System.Int32", ConsoleColor.Red);
+                        return;
+                    }
+                    key = typeof(Config).GetField(name, BindingFlags.Public | BindingFlags.Instance);
+                    if (key == null)
+                    {
+                        Terminal.Writeln("Specified parameter does not exist.", ConsoleColor.Red);
+                        return;
+                    }
+                    obj = key.GetValue(Config);
+                    if (obj is not string[])
+                    {
+                        Terminal.Writeln("Specified parameter is not array.", ConsoleColor.White);
+                        return;
+                    }
+                    List<string> list = ((string[])obj).ToList();
+                    list.RemoveAt(ind);
+                    key.SetValue(Config, list.ToArray());
+                    break;
+                case "list":
+                    FieldInfo[] infos = typeof(Config).GetFields(BindingFlags.Instance | BindingFlags.Public);
+                    foreach (var field in infos)
+                    {
+                        object val = field.GetValue(Config);
+                        if (val is string[] array)
+                            val = $"[{string.Join(", ", array)}]";
+                        Terminal.Writeln($"{field.Name} = {val}", ConsoleColor.White);
+                    }
+                    break;
+                case "help":
+                    Terminal.DrawTable([
+                        ["Command", "Description", "ArgCount", "ArgType"],
+                        ["set", "Changes the value of the specified parameter", "2", "<Any>"],
+                        ["get", "Gets the value of the specified parameter", "1", "<Any>"],
+                        ["add", "Adds a value to the parameter if it is an array", "2", "<Any>"],
+                        ["rem", "Removes the value from the parameter if it is an array", "2", "[ANY, INT]"],
+                        ["list", "Shows a list of parameters", "0", "<Null>"],
+                        ["help", "Shows this table", "0", "<Null>"]
+                    ]);
+                    break;
+                default:
+                    Terminal.Writeln("Unknown command.\nTip: Type `config help` to get list of \"config\" commands.", ConsoleColor.Red);
+                    return;
+            }
+        }, (1, 3)));
+        Commands.Add("hclear", new((arg) => { HistoryHandler.History.Clear(); }, (0, 0)));
         Commands.Add("mk", new((arg) => { File.Create(arg[0].ToString()).Close(); }, (1, 1)));
         Commands.Add("mkdir", new((arg) => { Directory.CreateDirectory(arg[0].ToString()); }, (1, 1)));
         Commands.Add("exit", new((arg) => {
@@ -292,10 +423,10 @@ partial class ConsoleHost
             }
             if (dir == "..")
             {
-                if (CurrentPath.Count(c => c == '\\') != 1)
-                    CurrentPath = CurrentPath[0..CurrentPath.LastIndexOf('\\')];
+                if (CurrentPath.Count(c => c == sep) != 1)
+                    CurrentPath = CurrentPath[0..CurrentPath.LastIndexOf(sep)];
                 else
-                    CurrentPath = CurrentPath[0..(CurrentPath.IndexOf(':') + 1)] + '\\';
+                    CurrentPath = CurrentPath[0..(CurrentPath.IndexOf(':') + 1)] + sep;
                 return;
             }
             CurrentPath = GetCorrectCasePath(Path.GetFullPath(dir));
@@ -347,7 +478,7 @@ partial class ConsoleHost
                 $"{f.LastWriteTime}{new string(' ', largest[2] - f.LastWriteTime.ToString().Length)}")
             ));
 
-            Terminal.Writeln($"――――――――――`{CurrentPath[(CurrentPath.LastIndexOf('\\') + 1)..]}` directory at {CurrentPath[0..(CurrentPath.IndexOf('\\') + 1)]}――――――――――", ConsoleColor.White);
+            Terminal.Writeln($"――――――――――`{CurrentPath[(CurrentPath.LastIndexOf(sep) + 1)..]}` directory at {CurrentPath[0..(CurrentPath.IndexOf(sep) + 1)]}――――――――――", ConsoleColor.White);
 
             // draw directories
             for (int i = 0; i < directories.Length; ++i)
@@ -355,7 +486,7 @@ partial class ConsoleHost
                 string name = directories[i].Name;
                 try
                 {
-                    Directory.GetDirectories(CurrentPath + $"\\{name}");
+                    Directory.GetDirectories(CurrentPath + $"{sep}{name}");
                 }
                 catch (UnauthorizedAccessException)
                 {
@@ -399,11 +530,6 @@ partial class ConsoleHost
                     if (arg.Length == 1)
                     {
                         Terminal.Writeln("Requires one more argument", ConsoleColor.Red);
-                        return;
-                    }
-                    if (!File.Exists(Path.GetDirectoryName(Environment.ProcessPath) + "\\Modules\\" + arg[1] + $"\\bin\\Debug\\net8.0\\{arg[1]}.dll"))
-                    {
-                        Terminal.Writeln("Module does not exist.", ConsoleColor.Red);
                         return;
                     }
                     ModuleInit(arg[1].ToString());
@@ -609,7 +735,7 @@ partial class ConsoleHost
                     ]);
                     break;
                 case "Drive":
-                    string disk = arg[0].ToString() + '\\';
+                    string disk = arg[0].ToString() + sep;
                     var drinfo = DriveInfo.GetDrives().Where(d => d.RootDirectory.FullName == disk).ToArray()[0];
                     try
                     {

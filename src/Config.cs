@@ -13,4 +13,6 @@ public sealed class Config
 
 
     public bool FirstStart = true;
+    public string[] AutoModulesInit = []; // which modules will be initialized when TermiSharp is started
+    public bool DisableHistoryFile = false; // disables saving the file .history
 }

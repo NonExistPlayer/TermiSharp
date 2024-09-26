@@ -18,7 +18,10 @@ internal sealed class HighlightHandler : IHighlightHandler
     {
         string[] words = text.Split(' ');
         if (MainHost.SubCommands.TryGetValue(words[0], out string[]? value) && words.Length > 1)
+        {
             text = text.Insert(words[0].Length + 1, value.Contains(words[1]) ? YELLOW : RED);
+            text = text.Insert(words[0].Length + words[1].Length + 6, RESET);
+        }
         if (MainHost.Commands.ContainsKey(words[0]))
         {
             if (words.Length > 1)

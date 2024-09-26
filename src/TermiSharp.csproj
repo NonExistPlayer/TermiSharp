@@ -12,10 +12,13 @@
 
   <ItemGroup>
     <Compile Remove="docs\**" />
+    <Compile Remove="libs\**" />
     <Compile Remove="Modules\**" />
     <EmbeddedResource Remove="docs\**" />
+    <EmbeddedResource Remove="libs\**" />
     <EmbeddedResource Remove="Modules\**" />
     <None Remove="docs\**" />
+    <None Remove="libs\**" />
     <None Remove="Modules\**" />
   </ItemGroup>
 
@@ -40,10 +43,10 @@
 
   <ItemGroup>
     <Reference Include="BetterReadLine">
-      <HintPath>libs\BetterReadLine.dll</HintPath>
+      <HintPath>..\libs\BetterReadLine.dll</HintPath>
     </Reference>
     <Reference Include="ConsoleTools">
-      <HintPath>libs\ConsoleTools.dll</HintPath>
+      <HintPath>..\libs\ConsoleTools.dll</HintPath>
     </Reference>
   </ItemGroup>
 
