@@ -1,5 +1,4 @@
 ﻿global using static TermiSharp.EntryPoint;
-using ConsoleTools;
 
 namespace TermiSharp;
 
@@ -8,12 +7,20 @@ namespace TermiSharp;
 public static class EntryPoint
 {
     public static ConsoleHost MainHost { get; private set; }
+    public static Exception? LastException { get; private set; }
     internal static void Main(string[] Args)
     {
+        Random rnd = new();
         MainHost = new ConsoleHost();
         AppDomain.CurrentDomain.UnhandledException += (s, e) => ExceptionHandler((Exception)e.ExceptionObject);
-        MainHost.Run();
+        MainHost.Run(Args);
     }
 
-    internal static void ExceptionHandler(Exception ex) => Terminal.Writeln(ex.ToString(), ConsoleColor.Red);
+    internal static void ExceptionHandler(Exception ex)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.Error.WriteLine(ex.Message);
+        LastException = ex;
+        Console.ResetColor();
+    }
 }

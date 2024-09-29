@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <BaseOutputPath>..\..\src\bin\Debug\net8.0\Modules\LunaPlayerAPI\bin</BaseOutputPath>
+    <BaseOutputPath>..\..\src\bin\Debug\net8.0-windows\Modules\LunaPlayerAPI\bin</BaseOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
