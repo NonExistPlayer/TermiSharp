@@ -17,4 +17,5 @@ public sealed class Config
     public bool DisableHistoryFile = false; // disables saving the file .history
     public bool ShowVersionOnStart = true; // will the version screen be shown when TermiSharp starts
     public bool SimplifiedVersionWindow = false; // simplified version window
+    public bool NerdFontsSupport = false; // support for icons from nerd fonts
 }

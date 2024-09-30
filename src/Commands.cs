@@ -267,6 +267,7 @@ partial class ConsoleHost
                 Console.Write("         ");
                 Console.BackgroundColor = ConsoleColor.Black;
             }
+            string GetIcon(string icon) => Config.NerdFontsSupport ? icon : "";
             Console.Clear();
             Console.CursorVisible = false;
             Terminal.Writeln(
@@ -302,18 +303,18 @@ partial class ConsoleHost
 
 
             Frame display = [
-               $"TermiSharp {Version}",
+               $"{GetIcon("\uf489 ")}TermiSharp {Version}",
                 "by NonExistPlayer",
-                "System Info:",
-               $"   {Environment.OSVersion} {(Environment.Is64BitOperatingSystem ? "x64" : "x86")}",
-               $"   {Environment.MachineName}@{Environment.UserName}",
-               $"   .NET Version : {Environment.Version}",
-                "Machine Info:",
-               $"   Processor    : {cpu["Name"]}",
-               $"   BIOS Version : {bios["Version"]}",
-               $"   GPU          : {gpu["Name"]}",
-               $"   GPU Memory   : {GetLength(long.Parse(gpu["AdapterRAM"].ToString()))}",
-               $"   RAM          : {availableMemory:F2} GB / {totalMemory:F2} GB"
+               $"{GetIcon("\uf085  ")}System Info:",
+               $"   {GetIcon("\ue62a  ")}{Environment.OSVersion} {(Environment.Is64BitOperatingSystem ? "x64" : "x86")}",
+               $"   {GetIcon("\uf109  ")}{Environment.MachineName}@{Environment.UserName} ",
+               $"   {GetIcon("\ue72e  ")}.NET Version : {Environment.Version}",
+               $"{GetIcon("\uf108  ")}Machine Info:",
+               $"   {GetIcon("\ueabe ")}Processor    : {cpu["Name"]}",
+               $"   {GetIcon("\ue79d  ")}BIOS Version : {bios["Version"]}",
+               $"   {GetIcon("\ueabe  ")}GPU          : {gpu["Name"]}",
+               $"   {GetIcon("\uf03e  ")}GPU Memory   : {GetLength(long.Parse(gpu["AdapterRAM"].ToString()))}",
+               $"   {GetIcon("\uefc5  ")}RAM          : {availableMemory:F2} GB / {totalMemory:F2} GB"
             ];
 
             Console.SetCursorPosition(41, 0);

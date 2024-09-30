@@ -34,7 +34,7 @@ public partial class ConsoleHost : IRunnable
     public string[] ExePath => Environment.GetEnvironmentVariable("PATH").Split(';').Concat([CurrentPath]).ToArray();
     public Dictionary<string, string> Variables = [];
     public BetterReadLine.ReadLine ReadLine;
-    public const string Version = "1.1-Dev";
+    public const string Version = "1.1";
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     static extern uint GetLongPathName(string shortPath, StringBuilder longPath, int longPathLength);
 
@@ -122,10 +122,28 @@ public partial class ConsoleHost : IRunnable
                     Console.CursorVisible = true;
                     Terminal.Writeln("\nDisk found!\nIt is recommended to restart the terminal with the `restart` command for correct operation.\n", ConsoleColor.Green);
                 }
-                Terminal.Write(Environment.UserName, Environment.IsPrivilegedProcess ? ConsoleColor.DarkRed : ConsoleColor.Cyan);
-                Console.Write('@');
-                Terminal.Write(CurrentPath, ConsoleColor.White);
-                Terminal.Write("# ", ConsoleColor.Blue);
+                if (!Config.NerdFontsSupport)
+                {
+                    Terminal.Write(Environment.UserName, Environment.IsPrivilegedProcess ? ConsoleColor.DarkRed : ConsoleColor.Cyan);
+                    Console.Write('@');
+                    Terminal.Write(CurrentPath, ConsoleColor.White);
+                    Terminal.Write("# ", ConsoleColor.Blue);
+                }
+                else
+                {
+                    Console.BackgroundColor = Environment.IsPrivilegedProcess ? ConsoleColor.Red : ConsoleColor.Cyan;
+                    Console.ForegroundColor = ConsoleColor.Black;
+                    Console.Write(" ");
+                    Console.Write(Environment.UserName + " ");
+                    Console.ResetColor();
+                    Console.BackgroundColor = ConsoleColor.Blue;
+                    Terminal.Write(" ", Environment.IsPrivilegedProcess ? ConsoleColor.Red : ConsoleColor.Cyan);
+                    Console.BackgroundColor = ConsoleColor.Blue;
+                    Console.ForegroundColor = ConsoleColor.Black;
+                    Console.Write(CurrentPath[..3].Replace("\\", " ") + CurrentPath[3..].Replace("\\", "  ") + (CurrentPath.Count(c => c == '\\') > 1 ? " " : ""));
+                    Console.ResetColor();
+                    Terminal.Write(" ", ConsoleColor.Blue);
+                }
                 string ln = ReadLine.Read();
                 HistoryHandler.History.Insert(0, ln);
                 HistoryHandler.Selected = 0;

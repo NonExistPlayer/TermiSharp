@@ -28,3 +28,5 @@
 * Now you can strengthen the initial menu like this:<br>
 `config set SimplifiedVersionWindow false`
 * You can now hide the start menu with the argument: `--hideversion`.
+* Added font support for [Nerd Fonts](https://www.nerdfonts.com/#home). To enable support, type:
+`config set NerdFontsSupport true`

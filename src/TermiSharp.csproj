@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Commands.cs~RF18af7f71.TMP" />
     <None Remove="README.md" />
   </ItemGroup>
 

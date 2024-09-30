@@ -28,3 +28,5 @@
 * Теперь можно упростить начальное меню так:<br>
 `config set SimplifiedVersionWindow false`
 * Теперь можно скрыть начальное меню аргументом: `--hideversion`.
+* Добавлена поддержка шрифта [Nerd Fonts](https://www.nerdfonts.com/#home). Чтобы включить поддержку пропишите:
+`config set NerdFontsSupport true`
