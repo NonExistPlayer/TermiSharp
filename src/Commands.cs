@@ -3,9 +3,8 @@ using ConsoleTools.Frames;
 using System.Diagnostics;
 using System.Data;
 using System.Reflection;
-using System.Collections;
-using Microsoft.CodeAnalysis.Operations;
 using TermiSharp.ReadLine;
+using System.Management;
 
 #nullable disable warnings
 
@@ -39,6 +38,11 @@ partial class ConsoleHost
             "rm", "bisect", "diff", "grep", "log", "show", "status",
             "branch", "commit", "merge", "rebase", "reset", "switch", "tag",
             "fetch", "pull", "push"]);
+        if (ExeExists("dotnet"))
+            SubCommands.Add("dotnet", ["add", "build", "build-server", 
+            "clean", "format", "help", "list", "msbuild", "new", "nuget",
+            "pack", "publish", "remove", "restore", "run", "sdk", "sln",
+            "store", "tool", "vstest", "workload"]);
     }
 
     void Init()
@@ -48,8 +52,7 @@ partial class ConsoleHost
         var ANY = typeof(object);
         var RANGE = typeof(Range);
         var BOOL = typeof(bool);
-        var TIME = typeof(DateTime);
-        
+
         char sep = Path.DirectorySeparatorChar;
 
         string? INFO(string s)
@@ -228,8 +231,12 @@ partial class ConsoleHost
                     return;
             }
         }, (1, 3)));
-        Commands.Add("hclear", new((arg) => { HistoryHandler.History.Clear(); }, (0, 0)));
-        Commands.Add("mk", new((arg) => { File.Create(arg[0].ToString()).Close(); }, (1, 1)));
+        Commands.Add("hclear", new((arg) => {
+            HistoryHandler.History.Clear();
+            if (HistoryHandler.History.Count == 0)
+                File.Delete($"{Path.GetDirectoryName(Environment.ProcessPath)}\\.history");
+        }, (0, 0)));
+        Commands.Add("make", new((arg) => { File.Create(arg[0].ToString()).Close(); }, (1, 1)));
         Commands.Add("mkdir", new((arg) => { Directory.CreateDirectory(arg[0].ToString()); }, (1, 1)));
         Commands.Add("exit", new((arg) => {
             if (arg.Length > 0)
@@ -249,12 +256,18 @@ partial class ConsoleHost
         }, (1, 1)));
         Commands.Add("outln", new((arg) => { Console.WriteLine(arg[0]); }, (1, 1)));
         Commands.Add("ver", new((arg) => {
+            if (Config.SimplifiedVersionWindow)
+            {
+                Console.WriteLine($"TermiSharp {Version}\nby NonExistPlayer");
+                return;
+            }
             static void WriteColor(ConsoleColor color)
             {
                 Console.BackgroundColor = color;
-                Console.Write("       ");
+                Console.Write("         ");
                 Console.BackgroundColor = ConsoleColor.Black;
             }
+            string GetIcon(string icon) => Config.NerdFontsSupport ? icon : "";
             Console.Clear();
             Console.CursorVisible = false;
             Terminal.Writeln(
@@ -264,15 +277,14 @@ partial class ConsoleHost
                             "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\r\n  \r\n   " +
                             "████████████████████████████████████\r\n   " +
                             "████████████████████████████████████\r\n   " +
+                            "██████  ████████  ██  ██████████████\r\n   " +
+                            "██████   ██████        █████████████\r\n   " +
+                            "███████    █████  ██  ██████████████\r\n   " +
+                            "███████    ████        █████████████\r\n   " +
+                            "██████   ███████  ██  ██████████████\r\n   " +
                             "██████  ████████████████████████████\r\n   " +
-                            "██████   ███████████████████████████\r\n   " +
-                            "███████    █████████████████████████\r\n   " +
-                            "███████    █████████████████████████\r\n   " +
-                            "██████   ███████████████████████████\r\n   " +
-                            "██████   ███████      ██████████████\r\n   " +
-                            "████████████████████████████████████\r\n    " +
-                            "██████████████████████████████████\r\n       " +
-                               "████████████████████████████",
+                            " ██████████████████████████████████ \r\n   " +
+                            "   ██████████████████████████████",
                 ConsoleColor.Green);
             Console.SetCursorPosition(5, 2);
             Terminal.Write("TermiSharp", ConsoleColor.White);
@@ -283,24 +295,38 @@ partial class ConsoleHost
             Console.SetCursorPosition(35, 2);
             Terminal.Write("X", ConsoleColor.Red);
 
+            ManagementObject cpu = new ManagementObjectSearcher("SELECT * FROM Win32_Processor").Get().Cast<ManagementObject>().FirstOrDefault();
+            ManagementObject bios = new ManagementObjectSearcher("SELECT * FROM Win32_BIOS").Get().Cast<ManagementObject>().FirstOrDefault();
+            ManagementObject gpu = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController").Get().Cast<ManagementObject>().FirstOrDefault();
+            float availableMemory = new PerformanceCounter("Memory", "Available Bytes").NextValue() / 1024 / 1024 / 1024;
+            float totalMemory = new PerformanceCounter("Memory", "Committed Bytes").NextValue()     / 1024 / 1024 / 1024;
+
+
             Frame display = [
-               $"TermiSharp {Version}",
+               $"{GetIcon("\uf489 ")}TermiSharp {Version}",
                 "by NonExistPlayer",
-                "System Info:",
-               $"   {Environment.OSVersion} {(Environment.Is64BitOperatingSystem ? "x64" : "x86")}",
-               $"   .NET Version : {Environment.Version}",
+               $"{GetIcon("\uf085  ")}System Info:",
+               $"   {GetIcon("\ue62a  ")}{Environment.OSVersion} {(Environment.Is64BitOperatingSystem ? "x64" : "x86")}",
+               $"   {GetIcon("\uf109  ")}{Environment.MachineName}@{Environment.UserName} ",
+               $"   {GetIcon("\ue72e  ")}.NET Version : {Environment.Version}",
+               $"{GetIcon("\uf108  ")}Machine Info:",
+               $"   {GetIcon("\ueabe ")}Processor    : {cpu["Name"]}",
+               $"   {GetIcon("\ue79d  ")}BIOS Version : {bios["Version"]}",
+               $"   {GetIcon("\ueabe  ")}GPU          : {gpu["Name"]}",
+               $"   {GetIcon("\uf03e  ")}GPU Memory   : {GetLength(long.Parse(gpu["AdapterRAM"].ToString()))}",
+               $"   {GetIcon("\uefc5  ")}RAM          : {availableMemory:F2} GB / {totalMemory:F2} GB"
             ];
 
-            Console.SetCursorPosition(41, 2);
+            Console.SetCursorPosition(41, 0);
             display.DrawTop();
             for (short i = 0; i < display.Count; i++)
             {
-                Console.SetCursorPosition(41, i + 3);
+                Console.SetCursorPosition(41, i + 1);
                 display.Draw(i);
             }
-            Console.SetCursorPosition(41, display.Count + 3);
+            Console.SetCursorPosition(41, display.Count + 1);
             display.DrawLow();
-            Console.SetCursorPosition(41, 10);
+            Console.SetCursorPosition(41, 15);
             WriteColor(ConsoleColor.White);
             WriteColor(ConsoleColor.Red);
             WriteColor(ConsoleColor.Yellow);
@@ -308,7 +334,7 @@ partial class ConsoleHost
             WriteColor(ConsoleColor.Cyan);
             WriteColor(ConsoleColor.Blue);
             WriteColor(ConsoleColor.Magenta);
-            Console.SetCursorPosition(41, 11);
+            Console.SetCursorPosition(41, 16);
             WriteColor(ConsoleColor.Gray);
             WriteColor(ConsoleColor.DarkRed);
             WriteColor(ConsoleColor.DarkYellow);
@@ -317,6 +343,7 @@ partial class ConsoleHost
             WriteColor(ConsoleColor.DarkBlue);
             WriteColor(ConsoleColor.DarkMagenta);
             Console.SetCursorPosition(0, 17);
+            Console.WriteLine();
             Console.CursorVisible = true;
         }, (0, 0)));
         Commands.Add("see", new((arg) => {
@@ -808,7 +835,7 @@ partial class ConsoleHost
                 Terminal.Writeln($"`{f}` is not directory or file", ConsoleColor.Red);
                 return;
             }
-            
+
             to = Path.GetFullPath(to);
             if (!Tools.TryActionWithFile(() => {
                 if (File.Exists(f))
@@ -877,5 +904,10 @@ partial class ConsoleHost
                             Terminal.Writeln(file, ConsoleColor.White);
                     }
         }, (1, 1), [STRING], Hidden: true));
+        Commands.Add("debug-lasterr", new((arg) => 
+        {
+            if (LastException != null)
+                Terminal.Writeln(LastException.ToString(), ConsoleColor.White);
+        }, (0, 0), Hidden: true));
     }
 }

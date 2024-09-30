@@ -1,4 +1,21 @@
 [Русская версия](docs/ru/Знакомство.md)
+```
+       @@@@@@@@@@@@@@@@@@@@@@@@@@@@
+    @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+   @@TermiSharp@@@@@@@@@@@@-@@@▢@@@X@@
+   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+   ████████████████████████████████████
+   ████████████████████████████████████
+   ██████  ████████  ██  ██████████████
+   ██████   ██████        █████████████
+   ███████    █████  ██  ██████████████
+   ███████    ████        █████████████
+   ██████   ███████  ██  ██████████████
+   ██████  ████████████████████████████
+    ██████████████████████████████████
+      ██████████████████████████████
+```
 # TermiSharp
 TermiSharp is a terminal that tries to be beautiful and convenient to use.
 
@@ -31,24 +48,29 @@ After installing Windows Terminal and TermiSharp, it's recommended to set up a p
 * You can now use TermiSharp and customize it! More information To view the list of commands, you can type the help command or view below.
 
 ### Command List
-Commands will be listed in the following format: Name - Description - Min. number of arguments, max. number of arguments
+Commands will be listed in the following format: 
++ Name - Description - Min. number of arguments, max. number of arguments
 
-* `clear` - Clears the console - 0, 0
-* `c` - Evaluates an expression - 1, 255
-* `cr` - Creates a file - 1, 1
-* `cr-dir` - Creates a directory - 1, 1
+* `clear`    - Clears the console - 0, 0
+* `c` - Evaluates the expression - 1, 255
+* `config` - Interacts with `config.json`                           - 1, 3
+* `hclear` - Clears the history - 0, 0
+* `make`     - Creates a file                                              - 1, 1
+* `mkdir`    - Creates a directory - 1, 1
 * `exit` - Exits the application - 0, 1
 * `restart` - Restarts TermiSharp - 0, 0
-* `out` - Outputs the specified text without a newline character at the end - 1, 1
+* `out`      - Outputs the specified text without a newline character at the end - 1, 1
 * `outln` - Outputs the specified text - 1, 1
-* `ver` - Displays the initial screen - 0, 0
-* `see` - Outputs the contents of the specified file - 1, 2
+* `ver`      - Displays the home screen - 0, 0
+* `see`      - Outputs the contents of the specified file - 1, 2
 * `see-bin` - Outputs the contents of the specified file in bytes - 1, 1
 * `see-meta` - Outputs the metadata of the specified file - 1, 1
 * `cd` - Changes the directory - 1, 1
-* `dir` - Outputs all files and directories in the current directory - 0, 0
-* `module` - Initializes modules and lists modules - 1, 3
-* `info` - Displays information about the file - 1, 1
-* `rm` - Deletes a directory or file - 1, 1
-* `sleep` - Pauses execution for the specified time - 1, 1
-* `help` - Displays the list of commands - 0, 1
+* `dir`      - Displays all files and folders in the current directory - 0, 0
+* `module` - Initialization of modules and a list of modules - 1, 3
+* `info' - Displays information about the file - 1, 1
+* `rm` - Deletes a folder or file                                    - 1, 1
+* `sleep`    - Freeze execution for the specified time - 1, 1
+* `cp` - Copying files or directories - 2, 2
+* `mv` - Moves files or directories - 2, 2
+* `help`     - Displays a list of commands - 0, 1

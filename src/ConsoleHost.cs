@@ -34,18 +34,18 @@ public partial class ConsoleHost : IRunnable
     public string[] ExePath => Environment.GetEnvironmentVariable("PATH").Split(';').Concat([CurrentPath]).ToArray();
     public Dictionary<string, string> Variables = [];
     public BetterReadLine.ReadLine ReadLine;
-    public const string Version = "1.0.1";
+    public const string Version = "1.1";
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     static extern uint GetLongPathName(string shortPath, StringBuilder longPath, int longPathLength);
 
     public bool IsRunning { get; set; } = true;
-    public void Run()
+    public void Run() => Run(null);
+    public void Run(string[]? args)
     {
-        Console.WriteLine();
+        args ??= [];
         Console.Title = "TermiSharp";
         Console.OutputEncoding = Encoding.UTF8;
         Init();
-        HandleCommand("ver");
         try
         {
             Config = Config.Load();
@@ -54,6 +54,8 @@ public partial class ConsoleHost : IRunnable
         {
             Config = new();
         }
+        if (Config.ShowVersionOnStart && !args.Contains("--hideversion"))
+            HandleCommand("ver");
         ReadLine = new()
         {
             AutoCompletionHandler = new AutoCompleteHandler(),
@@ -120,10 +122,28 @@ public partial class ConsoleHost : IRunnable
                     Console.CursorVisible = true;
                     Terminal.Writeln("\nDisk found!\nIt is recommended to restart the terminal with the `restart` command for correct operation.\n", ConsoleColor.Green);
                 }
-                Terminal.Write(Environment.UserName, Environment.IsPrivilegedProcess ? ConsoleColor.DarkRed : ConsoleColor.Cyan);
-                Console.Write('@');
-                Terminal.Write(CurrentPath, ConsoleColor.White);
-                Console.Write('>');
+                if (!Config.NerdFontsSupport)
+                {
+                    Terminal.Write(Environment.UserName, Environment.IsPrivilegedProcess ? ConsoleColor.DarkRed : ConsoleColor.Cyan);
+                    Console.Write('@');
+                    Terminal.Write(CurrentPath, ConsoleColor.White);
+                    Terminal.Write("# ", ConsoleColor.Blue);
+                }
+                else
+                {
+                    Console.BackgroundColor = Environment.IsPrivilegedProcess ? ConsoleColor.Red : ConsoleColor.Cyan;
+                    Console.ForegroundColor = ConsoleColor.Black;
+                    Console.Write(" ");
+                    Console.Write(Environment.UserName + " ");
+                    Console.ResetColor();
+                    Console.BackgroundColor = ConsoleColor.Blue;
+                    Terminal.Write(" ", Environment.IsPrivilegedProcess ? ConsoleColor.Red : ConsoleColor.Cyan);
+                    Console.BackgroundColor = ConsoleColor.Blue;
+                    Console.ForegroundColor = ConsoleColor.Black;
+                    Console.Write(CurrentPath[..3].Replace("\\", " ") + CurrentPath[3..].Replace("\\", "  ") + (CurrentPath.Count(c => c == '\\') > 1 ? " " : ""));
+                    Console.ResetColor();
+                    Terminal.Write(" ", ConsoleColor.Blue);
+                }
                 string ln = ReadLine.Read();
                 HistoryHandler.History.Insert(0, ln);
                 HistoryHandler.Selected = 0;
@@ -155,7 +175,10 @@ public partial class ConsoleHost : IRunnable
                     ExceptionHandler(e);
                 }
             }
-            catch { }
+            catch (Exception e)
+            {
+                ExceptionHandler(e);
+            }
         }
     }
 
@@ -188,9 +211,10 @@ public partial class ConsoleHost : IRunnable
         return null;
     }
 
-    public IEnumerable<string> GetLocalExes()
+    public IEnumerable<string> GetLocalExes() => GetExes(CurrentPath);
+    public IEnumerable<string> GetExes(string path)
     {
-        foreach (var fname in Directory.GetFiles(CurrentPath))
+        foreach (var fname in Directory.GetFiles(path))
             if (fname.EndsWith("exe") ||
                 fname.EndsWith("bat") ||
                 fname.EndsWith("cmd") ||
@@ -208,16 +232,16 @@ public partial class ConsoleHost : IRunnable
         switch (e)
         {
             case "KB":
-                length = ((float)Math.Round((double)Bytes / 1024, 2)).ToString() + e;
+                length = ((float)Math.Round((double)Bytes / 1024, 2)).ToString() + " " + e;
                 break;
             case "MB":
-                length = ((float)Math.Round((double)Bytes / 1048576, 2)).ToString() + e;
+                length = ((float)Math.Round((double)Bytes / 1048576, 2)).ToString() + " " + e;
                 break;
             case "GB":
-                length = ((float)Math.Round((double)Bytes / 1073741824, 2)).ToString() + e;
+                length = ((float)Math.Round((double)Bytes / 1073741824, 2)).ToString() + " " + e;
                 break;
             case "B":
-                length = Bytes + e;
+                length = Bytes + " " + e;
                 break;
         }
         return length;
@@ -323,9 +347,9 @@ public partial class ConsoleHost : IRunnable
     }
     public void ModuleInit(string modulename)
     {
-        string firstPath  = Path.GetDirectoryName(Environment.ProcessPath) + "\\Modules\\" + modulename + $"\\bin\\Debug\\net8.0\\{modulename}.dll";
+        string firstPath = Path.GetDirectoryName(Environment.ProcessPath) + "\\Modules\\" + modulename + $"\\bin\\Debug\\net8.0\\{modulename}.dll";
         string secondPath = Path.GetDirectoryName(Environment.ProcessPath) + $"\\Modules\\{modulename}.dll";
-        string thirdPath  = Path.GetDirectoryName(Environment.ProcessPath) + $"\\Modules\\{modulename}\\{modulename}.dll";
+        string thirdPath = Path.GetDirectoryName(Environment.ProcessPath) + $"\\Modules\\{modulename}\\{modulename}.dll";
         Assembly asm;
         if (File.Exists(firstPath))
             asm = Assembly.LoadFrom(firstPath);
@@ -362,8 +386,9 @@ public partial class ConsoleHost : IRunnable
                 SubCommands.Add(name, method.GetCustomAttributes<SubCommandAttribute>().Select(a => a.SubCommand).ToArray());
             if (method.IsDefined(typeof(CustomCommandNameAttribute), false))
                 name = method.GetCustomAttribute<CustomCommandNameAttribute>().CommandName;
-            if (!Commands.ContainsKey(method.Name))
-                Commands.Add(name, new(null, (min, max), types.ToArray(), method));
+            if (Commands.ContainsKey(method.Name))
+                name = $"{modulename}.{name}";
+            Commands.Add(name, new(null, (min, max), types.ToArray(), method, Hidden: method.IsDefined(typeof(HiddenCommandAtrribute), false)));
         }
         init?.Invoke(null, null);
         if (uninit != null)
