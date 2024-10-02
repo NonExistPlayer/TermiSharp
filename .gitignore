@@ -7,3 +7,5 @@ src/Properties
 modules/LunaPlayerAPI/.vs
 modules/LunaPlayerAPI/bin
 modules/LunaPlayerAPI/obj
+modules/TClient
+*.tss

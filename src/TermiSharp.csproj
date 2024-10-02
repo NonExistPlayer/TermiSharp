@@ -24,11 +24,14 @@
 
   <ItemGroup>
     <None Remove="Commands.cs~RF18af7f71.TMP" />
+    <None Remove="ConsoleHost.cs~RF192ee3a0.TMP" />
     <None Remove="README.md" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.9.1" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.61" />
+    <PackageReference Include="LibGit2Sharp" Version="0.30.0" />
     <PackageReference Include="MetadataExtractor" Version="2.8.1" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.9.2" />
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />

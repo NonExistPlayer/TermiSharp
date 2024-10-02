@@ -28,5 +28,11 @@
 * Теперь можно упростить начальное меню так:<br>
 `config set SimplifiedVersionWindow false`
 * Теперь можно скрыть начальное меню аргументом: `--hideversion`.
-* Добавлена поддержка шрифта [Nerd Fonts](https://www.nerdfonts.com/#home). Чтобы включить поддержку пропишите:
+* Добавлена поддержка шрифта [Nerd Fonts](https://www.nerdfonts.com/#home). Чтобы включить поддержку пропишите:<br>
 `config set NerdFontsSupport true`
+# 1.1.1
+* Добавлена команда [`debug-throw`](src/Commands.cs#L913) для отладки исключений.
+* Теперь при исключении если [`NerdFontsSupport`](src/Config.cs#L20) включено, то выводится иконка ошибки.
+* Добавлено отображение текущей ветки в репозиториях.
+* Исправлено наименование [`HiddenCommandAttribute`](src/Attributes/HiddenCommandAttribute.cs) из пространства имён [`TermiSharp.Attributes`](src/Attributes/).
+* Добавлено выполнение TSS (TermiSharpScript) скриптов.
