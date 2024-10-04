@@ -257,7 +257,7 @@ partial class ConsoleHost
         }, (1, 1)));
         Commands.Add("outln", new((arg) => { Console.WriteLine(arg[0]); }, (1, 1)));
         Commands.Add("ver", new((arg) => {
-            if (Config.SimplifiedVersionWindow)
+            if (Config.SimplifiedVersionWindow || OperatingSystem.IsLinux() )
             {
                 Console.WriteLine($"TermiSharp {Version}\nby NonExistPlayer");
                 return;

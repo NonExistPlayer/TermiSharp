@@ -9,7 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "modules", "modules", "{E315
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LunaPlayerAPI", "modules\LunaPlayerAPI\LunaPlayerAPI.csproj", "{E152B658-2AD3-442C-99A4-DD62E7940E45}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TClient", "modules\TClient\TClient.csproj", "{4C1A6B5C-2466-4878-A813-141F6EE76D35}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TClient", "modules\TClient\TClient.csproj", "{4C1A6B5C-2466-4878-A813-141F6EE76D35}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

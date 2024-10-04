@@ -27,7 +27,26 @@ public partial class ConsoleHost : IRunnable
         get => Environment.CurrentDirectory;
         set
         {
-            if (!Directory.Exists(value)) throw new DirectoryNotFoundException(value);
+            if (Path.GetDirectoryName(Environment.CurrentDirectory) == value && repo != null)
+            {
+                if (Repository.IsValid(value))
+                    repo = new(value);
+                else
+                    repo = null;
+            }
+
+            if (repo != null)
+            {
+                string dirname = value[(value.LastIndexOf('\\') + 1)..];
+                if (dirname.Length == 0)
+                    repo = null;
+                else if (repo.Ignore.IsPathIgnored(dirname))
+                    repo = null;
+            }
+
+            if (repo == null && Repository.IsValid(value))
+                repo = new(value);
+
             Environment.CurrentDirectory = value;
         }
     }
@@ -37,7 +56,8 @@ public partial class ConsoleHost : IRunnable
     public BetterReadLine.ReadLine ReadLine;
     public const string Version = "1.1.1-Dev";
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    static extern uint GetLongPathName(string shortPath, StringBuilder longPath, int longPathLength);
+    private static extern uint GetLongPathName(string shortPath, StringBuilder longPath, int longPathLength);
+    private Repository? repo;
 
     public bool IsRunning { get; set; } = true;
     public void Run() => Run(null);
@@ -95,6 +115,8 @@ public partial class ConsoleHost : IRunnable
         }
         foreach (string module in Config.AutoModulesInit)
             HandleCommand($"module init {module}");
+        if (repo == null && Repository.IsValid(CurrentPath))
+            repo = new(CurrentPath);
         MainLoop();
     }
     public void RunAsync() => Task.Run(Run);
@@ -128,12 +150,6 @@ public partial class ConsoleHost : IRunnable
                     Console.CursorVisible = true;
                     Terminal.Writeln("\nDisk found!\nIt is recommended to restart the terminal with the `restart` command for correct operation.\n", ConsoleColor.Green);
                 }
-                Repository? repo = null;
-                try
-                {
-                    repo = new(CurrentPath);
-                }
-                catch { }
                 if (!Config.NerdFontsSupport)
                 {
                     Terminal.Write(Environment.UserName, Environment.IsPrivilegedProcess ? ConsoleColor.DarkRed : ConsoleColor.Cyan);
