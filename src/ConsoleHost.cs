@@ -55,7 +55,7 @@ public partial class ConsoleHost : IRunnable
     public string[] ExePath => Environment.GetEnvironmentVariable("PATH").Split(';').Concat([CurrentPath]).ToArray();
     public Dictionary<string, object> Variables = [];
     public BetterReadLine.ReadLine ReadLine;
-    public const string Version = "1.1.1-Dev";
+    public const string Version = "1.1.1";
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern uint GetLongPathName(string shortPath, StringBuilder longPath, int longPathLength);
     private Repository? repo;
