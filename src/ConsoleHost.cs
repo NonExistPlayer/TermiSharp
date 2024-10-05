@@ -27,6 +27,7 @@ public partial class ConsoleHost : IRunnable
         get => Environment.CurrentDirectory;
         set
         {
+            value = value.Replace("\\", "/");
             if (Path.GetDirectoryName(Environment.CurrentDirectory) == value && repo != null)
             {
                 if (Repository.IsValid(value))
@@ -299,6 +300,7 @@ public partial class ConsoleHost : IRunnable
 
     static string GetCorrectCasePath(string path)
     {
+        if (!OperatingSystem.IsWindows()) return path;
         if (string.IsNullOrEmpty(path) || !Path.IsPathRooted(path))
             throw new ArgumentException("Invalid path");
 

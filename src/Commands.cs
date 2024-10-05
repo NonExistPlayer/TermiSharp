@@ -257,7 +257,7 @@ partial class ConsoleHost
         }, (1, 1)));
         Commands.Add("outln", new((arg) => { Console.WriteLine(arg[0]); }, (1, 1)));
         Commands.Add("ver", new((arg) => {
-            if (Config.SimplifiedVersionWindow || OperatingSystem.IsLinux() )
+            if (Config.SimplifiedVersionWindow)
             {
                 Console.WriteLine($"TermiSharp {Version}\nby NonExistPlayer");
                 return;
@@ -296,27 +296,32 @@ partial class ConsoleHost
             Console.SetCursorPosition(35, 2);
             Terminal.Write("X", ConsoleColor.Red);
 
-            ManagementObject cpu = new ManagementObjectSearcher("SELECT * FROM Win32_Processor").Get().Cast<ManagementObject>().FirstOrDefault();
-            ManagementObject bios = new ManagementObjectSearcher("SELECT * FROM Win32_BIOS").Get().Cast<ManagementObject>().FirstOrDefault();
-            ManagementObject gpu = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController").Get().Cast<ManagementObject>().FirstOrDefault();
-            float availableMemory = new PerformanceCounter("Memory", "Available Bytes").NextValue() / 1024 / 1024 / 1024;
-            float totalMemory = new PerformanceCounter("Memory", "Committed Bytes").NextValue()     / 1024 / 1024 / 1024;
-
-
             Frame display = [
-               $"{GetIcon("\uf489 ")}TermiSharp {Version}",
-                "by NonExistPlayer",
-               $"{GetIcon("\uf085  ")}System Info:",
-               $"   {GetIcon("\ue62a  ")}{Environment.OSVersion} {(Environment.Is64BitOperatingSystem ? "x64" : "x86")}",
-               $"   {GetIcon("\uf109  ")}{Environment.MachineName}@{Environment.UserName} ",
-               $"   {GetIcon("\ue72e  ")}.NET Version : {Environment.Version}",
-               $"{GetIcon("\uf108  ")}Machine Info:",
-               $"   {GetIcon("\ueabe  ")}Processor    : {cpu["Name"]}",
-               $"   {GetIcon("\ue79d  ")}BIOS Version : {bios["Version"]}",
-               $"   {GetIcon("\ueabe  ")}GPU          : {gpu["Name"]}",
-               $"   {GetIcon("\uf03e  ")}GPU Memory   : {GetLength(long.Parse(gpu["AdapterRAM"].ToString()))}",
-               $"   {GetIcon("\uefc5  ")}RAM          : {availableMemory:F2} GB / {totalMemory:F2} GB"
+                $"{GetIcon("\uf489 ")}TermiSharp {Version}",
+                    "by NonExistPlayer",
+                $"{GetIcon("\uf085  ")}System Info:",
+                $"   {GetIcon("\ue62a  ")}{Environment.OSVersion} x{(Environment.Is64BitOperatingSystem ? "64" : "86")}",
+                $"   {GetIcon("\uf109  ")}{Environment.MachineName}@{Environment.UserName} ",
+                $"   {GetIcon("\ue72e  ")}.NET Version : {Environment.Version}"
             ];
+
+            if (OperatingSystem.IsWindows())
+            {
+                ManagementObject cpu = new ManagementObjectSearcher("SELECT * FROM Win32_Processor").Get().Cast<ManagementObject>().FirstOrDefault();
+                ManagementObject bios = new ManagementObjectSearcher("SELECT * FROM Win32_BIOS").Get().Cast<ManagementObject>().FirstOrDefault();
+                ManagementObject gpu = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController").Get().Cast<ManagementObject>().FirstOrDefault();
+                float availableMemory = new PerformanceCounter("Memory", "Available Bytes").NextValue() / 1024 / 1024 / 1024;
+                float totalMemory = new PerformanceCounter("Memory", "Committed Bytes").NextValue()     / 1024 / 1024 / 1024;
+
+                display.AddRange([
+                    $"{GetIcon("\uf108  ")}Machine Info:",
+                    $"   {GetIcon("\ueabe  ")}Processor    : {cpu["Name"]}",
+                    $"   {GetIcon("\ue79d  ")}BIOS Version : {bios["Version"]}",
+                    $"   {GetIcon("\ueabe  ")}GPU          : {gpu["Name"]}",
+                    $"   {GetIcon("\uf03e  ")}GPU Memory   : {GetLength(long.Parse(gpu["AdapterRAM"].ToString()))}",
+                    $"   {GetIcon("\uefc5  ")}RAM          : {availableMemory:F2} GB / {totalMemory:F2} GB"
+                ]);
+            }
 
             Console.SetCursorPosition(41, 0);
             display.DrawTop();
