@@ -1,13 +1,10 @@
 # TermiSharp Changelog
-## 1.0.1
-* Исправлена работа `bool`[`ExeExists`](src/Commands.cs#L20)`(string)`.
-* Добавлен ключ "AutoModulesInit" в `config.json`. [Подробнее](src/Config.cs#L16).
-* Исправлен баг в [коде](src/ConsoleHost.cs#L351), теперь аттрибуты для методов в модулях работают коректно.
-* Добавлена команда [`config`](src/Commands.cs#L106).
-* Исправлена ошибка когда при вводе команды, а затем её под-команды, то любой текст после будет жёлтым. [Подробнее](src/ReadLine/HighlightHandler.cs#L20).
-* Теперь история написаний в терминал команд хранится в `.history`.
-* Добавлена команда [`hclear`](src/Commands.cs#L231), которая очищает историю.
-* Добавлен ключ "DisableHistoryFile" в `config.json`. [Подробнее](src/Config.cs#L17).
+## 1.1.1
+* Добавлена команда [`debug-throw`](https://github.com/NonExistPlayer/TermiSharp/blob/v1.1.1/src/Commands.cs#L913) для отладки исключений.
+* Теперь при исключении если [`NerdFontsSupport`](https://github.com/NonExistPlayer/TermiSharp/blob/v1.1.1/src/Config.cs#L19) включено, то выводится иконка ошибки.
+* Добавлено отображение текущей ветки в репозиториях.
+* Исправлено наименование [`HiddenCommandAttribute`](https://github.com/NonExistPlayer/TermiSharp/blob/v1.1.1/src/Attributes/HiddenCommandAttribute.cs) из пространства имён [`TermiSharp.Attributes`](https://github.com/NonExistPlayer/TermiSharp/blob/v1.1.1/src/Attributes).
+* Добавлено выполнение TSS (TermiSharpScript) скриптов.
 ## 1.1
 * Теперь у таких команд как:<br>
  `see`, `see-bin`, `see-meta`, `info`, `mv`, `rm`, `cp`<br>
@@ -30,9 +27,12 @@
 * Теперь можно скрыть начальное меню аргументом: `--hideversion`.
 * Добавлена поддержка шрифта [Nerd Fonts](https://www.nerdfonts.com/#home). Чтобы включить поддержку пропишите:<br>
 `config set NerdFontsSupport true`
-# 1.1.1
-* Добавлена команда [`debug-throw`](src/Commands.cs#L913) для отладки исключений.
-* Теперь при исключении если [`NerdFontsSupport`](src/Config.cs#L20) включено, то выводится иконка ошибки.
-* Добавлено отображение текущей ветки в репозиториях.
-* Исправлено наименование [`HiddenCommandAttribute`](src/Attributes/HiddenCommandAttribute.cs) из пространства имён [`TermiSharp.Attributes`](src/Attributes/).
-* Добавлено выполнение TSS (TermiSharpScript) скриптов.
+## 1.0.1
+* Исправлена работа `bool`[`ExeExists`](https://github.com/NonExistPlayer/TermiSharp/blob/v1.0.1/src/Commands.cs#L20)`(string)`.
+* Добавлен ключ "AutoModulesInit" в `config.json`. [Подробнее](https://github.com/NonExistPlayer/TermiSharp/blob/v1.0.1/src/Config.cs#L20).
+* Исправлен баг в [коде](https://github.com/NonExistPlayer/TermiSharp/blob/v1.0.1/src/ConsoleHost.cs#L356), теперь аттрибуты для методов в модулях работают коректно.
+* Добавлена команда [`config`](src/Commands.cs#L106).
+* Исправлена ошибка когда при вводе команды, а затем её под-команды, то любой текст после будет жёлтым. [Подробнее](src/ReadLine/HighlightHandler.cs#L20).
+* Теперь история написаний в терминал команд хранится в `.history`.
+* Добавлена команда [`hclear`](src/Commands.cs#L231), которая очищает историю.
+* Добавлен ключ "DisableHistoryFile" в `config.json`. [Подробнее](src/Config.cs#L17).
