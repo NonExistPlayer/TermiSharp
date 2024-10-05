@@ -68,7 +68,7 @@ Commands will be listed in the following format:
 * `cd` - Changes the directory - 1, 1
 * `dir`      - Displays all files and folders in the current directory - 0, 0
 * `module` - Initialization of modules and a list of modules - 1, 3
-* `info' - Displays information about the file - 1, 1
+* `info` - Displays information about the file - 1, 1
 * `rm` - Deletes a folder or file                                    - 1, 1
 * `sleep`    - Freeze execution for the specified time - 1, 1
 * `cp` - Copying files or directories - 2, 2

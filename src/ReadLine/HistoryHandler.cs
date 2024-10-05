@@ -10,7 +10,7 @@ internal sealed class HistoryHandler : IHistoryHandler
     {
         string file = $"{Path.GetDirectoryName(Environment.ProcessPath)}\\.history";
         if (!File.Exists(file) || MainHost.Config.DisableHistoryFile) return;
-        History = File.ReadAllLines(file).ToList();
+        History = File.ReadAllLines(file).ToList().Distinct().ToList();
     }
 
     public string? GetNext(string promptText, int caret, bool wasEdited)

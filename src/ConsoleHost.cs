@@ -1,5 +1,4 @@
-﻿using ConsoleTools;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using System.ComponentModel;
@@ -8,8 +7,12 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using TermiSharp.Attributes;
 using TermiSharp.ReadLine;
+using TermiSharp.TSScript;
+using ConsoleTools;
+using LibGit2Sharp;
 
 #nullable disable warnings
 
@@ -24,38 +27,62 @@ public partial class ConsoleHost : IRunnable
         get => Environment.CurrentDirectory;
         set
         {
-            if (!Directory.Exists(value)) throw new DirectoryNotFoundException(value);
-            if (value.EndsWith('\\') || value.EndsWith('/'))
-                value = value[0..(value.Length - 1)];
+            value = value.Replace("\\", "/");
+            if (Path.GetDirectoryName(Environment.CurrentDirectory) == value && repo != null)
+            {
+                if (Repository.IsValid(value))
+                    repo = new(value);
+                else
+                    repo = null;
+            }
+
+            if (repo != null)
+            {
+                string dirname = value[(value.LastIndexOf('\\') + 1)..];
+                if (dirname.Length == 0)
+                    repo = null;
+                else if (repo.Ignore.IsPathIgnored(dirname))
+                    repo = null;
+            }
+
+            if (repo == null && Repository.IsValid(value))
+                repo = new(value);
+
             Environment.CurrentDirectory = value;
         }
     }
     public Config Config { get; private set; }
     public string[] ExePath => Environment.GetEnvironmentVariable("PATH").Split(';').Concat([CurrentPath]).ToArray();
-    public Dictionary<string, string> Variables = [];
+    public Dictionary<string, object> Variables = [];
     public BetterReadLine.ReadLine ReadLine;
-    public const string Version = "1.1";
+    public const string Version = "1.1.1";
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    static extern uint GetLongPathName(string shortPath, StringBuilder longPath, int longPathLength);
+    private static extern uint GetLongPathName(string shortPath, StringBuilder longPath, int longPathLength);
+    private Repository? repo;
 
     public bool IsRunning { get; set; } = true;
     public void Run() => Run(null);
-    public void Run(string[]? args)
+    internal void Run(Options? args)
     {
-        args ??= [];
+        args ??= new();
         Console.Title = "TermiSharp";
         Console.OutputEncoding = Encoding.UTF8;
         Init();
         try
         {
-            Config = Config.Load();
+            Config = Config.Load(args.ConfigPath ?? Config.ConfigPath);
         }
         catch
         {
             Config = new();
         }
-        if (Config.ShowVersionOnStart && !args.Contains("--hideversion"))
+        if (Config.ShowVersionOnStart && !args.HideVersion)
             HandleCommand("ver");
+        if (args.InitPath != null)
+            if (Directory.Exists(args.InitPath))
+                CurrentPath = args.InitPath;
+        if (args.Command != null)
+            HandleCommand(args.Command);
         ReadLine = new()
         {
             AutoCompletionHandler = new AutoCompleteHandler(),
@@ -89,6 +116,8 @@ public partial class ConsoleHost : IRunnable
         }
         foreach (string module in Config.AutoModulesInit)
             HandleCommand($"module init {module}");
+        if (repo == null && Repository.IsValid(CurrentPath))
+            repo = new(CurrentPath);
         MainLoop();
     }
     public void RunAsync() => Task.Run(Run);
@@ -127,25 +156,42 @@ public partial class ConsoleHost : IRunnable
                     Terminal.Write(Environment.UserName, Environment.IsPrivilegedProcess ? ConsoleColor.DarkRed : ConsoleColor.Cyan);
                     Console.Write('@');
                     Terminal.Write(CurrentPath, ConsoleColor.White);
+                    if (CurrentPath.Length >= 90)
+                        Console.WriteLine();
+                    if (repo != null)
+                        Terminal.Write($" at {repo.Head.FriendlyName} ", ConsoleColor.Green);
                     Terminal.Write("# ", ConsoleColor.Blue);
                 }
                 else
                 {
-                    Console.BackgroundColor = Environment.IsPrivilegedProcess ? ConsoleColor.Red : ConsoleColor.Cyan;
+                    Console.BackgroundColor = Environment.IsPrivilegedProcess ? ConsoleColor.Red : ConsoleColor.White;
                     Console.ForegroundColor = ConsoleColor.Black;
                     Console.Write(" ");
                     Console.Write(Environment.UserName + " ");
                     Console.ResetColor();
                     Console.BackgroundColor = ConsoleColor.Blue;
-                    Terminal.Write(" ", Environment.IsPrivilegedProcess ? ConsoleColor.Red : ConsoleColor.Cyan);
+                    Terminal.Write(" ", Environment.IsPrivilegedProcess ? ConsoleColor.Red : ConsoleColor.White);
                     Console.BackgroundColor = ConsoleColor.Blue;
                     Console.ForegroundColor = ConsoleColor.Black;
-                    Console.Write(CurrentPath[..3].Replace("\\", " ") + CurrentPath[3..].Replace("\\", "  ") + (CurrentPath.Count(c => c == '\\') > 1 ? " " : ""));
+                    Console.Write(CurrentPath.Replace("\\", "  ") + (CurrentPath.EndsWith('\\') ? "" : " "));
                     Console.ResetColor();
+                    if (repo != null)
+                        Console.BackgroundColor = ConsoleColor.Green;
                     Terminal.Write(" ", ConsoleColor.Blue);
+                    if (repo != null)
+                    {
+                        Console.BackgroundColor = ConsoleColor.Green;
+                        Console.ForegroundColor = ConsoleColor.Black;
+                        Console.Write($"\ue725 {repo.Head.FriendlyName} ");
+                        Console.ResetColor();
+                        Terminal.Write($" ", ConsoleColor.Green);
+                    }
+                    if (CurrentPath.Length >= 70)
+                        Terminal.Write("\n# ", ConsoleColor.Blue);
                 }
                 string ln = ReadLine.Read();
-                HistoryHandler.History.Insert(0, ln);
+                if (ln != "")
+                    HistoryHandler.History.Insert(0, ln);
                 HistoryHandler.Selected = 0;
                 if (string.IsNullOrWhiteSpace(ln)) continue;
                 if (ln.Split(' ').Where(s => s.StartsWith('$')).Any(s => Environment.GetEnvironmentVariable(s[1..]) == null))
@@ -163,7 +209,7 @@ public partial class ConsoleHost : IRunnable
                     if (s.StartsWith('$'))
                         s = '"' + Environment.GetEnvironmentVariable(s[1..]) + '"';
                     else if (s.StartsWith('@'))
-                        s = '"' + Variables[s[1..]] + '"';
+                        s = '"' + Variables[s[1..]].ToString() + '"';
                     return s;
                 }));
                 try
@@ -195,7 +241,11 @@ public partial class ConsoleHost : IRunnable
 
             if (File.Exists(path + $"\\{fname}.csx"))
                 return path + $"\\{fname}.csx";
+            if (File.Exists(path + $"\\{fname}.tss"))
+                return path + $"\\{fname}.tss";
         }
+        if (File.Exists(Path.GetDirectoryName(Environment.ProcessPath) + $"\\Scripts\\{fname}.tss"))
+            return Path.GetDirectoryName(Environment.ProcessPath) + $"\\Scripts\\{fname}.tss";
         if (File.Exists(Path.GetDirectoryName(Environment.ProcessPath) + $"\\Scripts\\{fname}.csx"))
             return Path.GetDirectoryName(Environment.ProcessPath) + $"\\Scripts\\{fname}.csx";
 
@@ -218,7 +268,8 @@ public partial class ConsoleHost : IRunnable
             if (fname.EndsWith("exe") ||
                 fname.EndsWith("bat") ||
                 fname.EndsWith("cmd") ||
-                fname.EndsWith("csx"))
+                fname.EndsWith("csx") ||
+                fname.EndsWith("tss"))
                 yield return fname[(fname.LastIndexOf('\\') + 1)..];
     }
 
@@ -249,6 +300,7 @@ public partial class ConsoleHost : IRunnable
 
     static string GetCorrectCasePath(string path)
     {
+        if (!OperatingSystem.IsWindows()) return path;
         if (string.IsNullOrEmpty(path) || !Path.IsPathRooted(path))
             throw new ArgumentException("Invalid path");
 
@@ -285,7 +337,7 @@ public partial class ConsoleHost : IRunnable
         }
         if (Commands.TryGetValue(command, out Command com))
             com.Call(args);
-        else if (path != null || File.Exists(command))
+        if (path != null || File.Exists(command))
         {
             path ??= Path.GetFullPath(command);
             switch (path[(path.Length - 3)..path.Length])
@@ -322,6 +374,18 @@ public partial class ConsoleHost : IRunnable
                     prc.OutputDataReceived += (s, e) => Console.WriteLine(e.Data);
                     prc.ErrorDataReceived += (s, e) => Console.WriteLine(e.Data);
                     prc.WaitForExit();
+                    break;
+                case "tss": // TermiSharpScript
+                    bool userExited = false;
+                    int exitcode = Interpreter.Run(XDocument.Load(path, LoadOptions.SetLineInfo), Path.GetFileName(path), ref userExited);
+                    if (exitcode == 0)
+                        Console.ForegroundColor = ConsoleColor.Green;
+                    else if (exitcode == -1 && !userExited)
+                        Console.ForegroundColor = ConsoleColor.Red;
+                    else if (userExited)
+                        Console.ForegroundColor = ConsoleColor.White;
+
+                    Console.WriteLine($"Script exited with code {exitcode}");
                     break;
                 case "csx":
                     try
@@ -388,7 +452,7 @@ public partial class ConsoleHost : IRunnable
                 name = method.GetCustomAttribute<CustomCommandNameAttribute>().CommandName;
             if (Commands.ContainsKey(method.Name))
                 name = $"{modulename}.{name}";
-            Commands.Add(name, new(null, (min, max), types.ToArray(), method, Hidden: method.IsDefined(typeof(HiddenCommandAtrribute), false)));
+            Commands.Add(name, new(null, (min, max), types.ToArray(), method, Hidden: method.IsDefined(typeof(HiddenCommandAttribute), false)));
         }
         init?.Invoke(null, null);
         if (uninit != null)

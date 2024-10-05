@@ -246,11 +246,12 @@ partial class ConsoleHost
         Commands.Add("restart", new((arg) => {
             ProcessStartInfo info = new()
             {
-                FileName = Environment.ProcessPath
+                FileName = Environment.ProcessPath,
+                Arguments = string.Join(' ', arg.Select(o => o.ToString()))
             };
             Process.Start(info);
             Environment.Exit(0);
-        }, (0, 0)));
+        }, (0, 255)));
         Commands.Add("out", new((arg) => {
             Console.Write(arg[0].ToString());
         }, (1, 1)));
@@ -295,27 +296,32 @@ partial class ConsoleHost
             Console.SetCursorPosition(35, 2);
             Terminal.Write("X", ConsoleColor.Red);
 
-            ManagementObject cpu = new ManagementObjectSearcher("SELECT * FROM Win32_Processor").Get().Cast<ManagementObject>().FirstOrDefault();
-            ManagementObject bios = new ManagementObjectSearcher("SELECT * FROM Win32_BIOS").Get().Cast<ManagementObject>().FirstOrDefault();
-            ManagementObject gpu = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController").Get().Cast<ManagementObject>().FirstOrDefault();
-            float availableMemory = new PerformanceCounter("Memory", "Available Bytes").NextValue() / 1024 / 1024 / 1024;
-            float totalMemory = new PerformanceCounter("Memory", "Committed Bytes").NextValue()     / 1024 / 1024 / 1024;
-
-
             Frame display = [
-               $"{GetIcon("\uf489 ")}TermiSharp {Version}",
-                "by NonExistPlayer",
-               $"{GetIcon("\uf085  ")}System Info:",
-               $"   {GetIcon("\ue62a  ")}{Environment.OSVersion} {(Environment.Is64BitOperatingSystem ? "x64" : "x86")}",
-               $"   {GetIcon("\uf109  ")}{Environment.MachineName}@{Environment.UserName} ",
-               $"   {GetIcon("\ue72e  ")}.NET Version : {Environment.Version}",
-               $"{GetIcon("\uf108  ")}Machine Info:",
-               $"   {GetIcon("\ueabe ")}Processor    : {cpu["Name"]}",
-               $"   {GetIcon("\ue79d  ")}BIOS Version : {bios["Version"]}",
-               $"   {GetIcon("\ueabe  ")}GPU          : {gpu["Name"]}",
-               $"   {GetIcon("\uf03e  ")}GPU Memory   : {GetLength(long.Parse(gpu["AdapterRAM"].ToString()))}",
-               $"   {GetIcon("\uefc5  ")}RAM          : {availableMemory:F2} GB / {totalMemory:F2} GB"
+                $"{GetIcon("\uf489 ")}TermiSharp {Version}",
+                    "by NonExistPlayer",
+                $"{GetIcon("\uf085  ")}System Info:",
+                $"   {GetIcon("\ue62a  ")}{Environment.OSVersion} x{(Environment.Is64BitOperatingSystem ? "64" : "86")}",
+                $"   {GetIcon("\uf109  ")}{Environment.MachineName}@{Environment.UserName} ",
+                $"   {GetIcon("\ue72e  ")}.NET Version : {Environment.Version}"
             ];
+
+            if (OperatingSystem.IsWindows())
+            {
+                ManagementObject cpu = new ManagementObjectSearcher("SELECT * FROM Win32_Processor").Get().Cast<ManagementObject>().FirstOrDefault();
+                ManagementObject bios = new ManagementObjectSearcher("SELECT * FROM Win32_BIOS").Get().Cast<ManagementObject>().FirstOrDefault();
+                ManagementObject gpu = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController").Get().Cast<ManagementObject>().FirstOrDefault();
+                float availableMemory = new PerformanceCounter("Memory", "Available Bytes").NextValue() / 1024 / 1024 / 1024;
+                float totalMemory = new PerformanceCounter("Memory", "Committed Bytes").NextValue()     / 1024 / 1024 / 1024;
+
+                display.AddRange([
+                    $"{GetIcon("\uf108  ")}Machine Info:",
+                    $"   {GetIcon("\ueabe  ")}Processor    : {cpu["Name"]}",
+                    $"   {GetIcon("\ue79d  ")}BIOS Version : {bios["Version"]}",
+                    $"   {GetIcon("\ueabe  ")}GPU          : {gpu["Name"]}",
+                    $"   {GetIcon("\uf03e  ")}GPU Memory   : {GetLength(long.Parse(gpu["AdapterRAM"].ToString()))}",
+                    $"   {GetIcon("\uefc5  ")}RAM          : {availableMemory:F2} GB / {totalMemory:F2} GB"
+                ]);
+            }
 
             Console.SetCursorPosition(41, 0);
             display.DrawTop();
@@ -434,11 +440,17 @@ partial class ConsoleHost
         Commands.Add("cd", new((arg) =>
         {
             string dir = arg[0].ToString();
+            if (dir == "..")
+            {
+                CurrentPath = Path.GetDirectoryName(CurrentPath) ?? CurrentPath[0..(CurrentPath.IndexOf(':') + 1)];
+                return;
+            }
             if (!Directory.Exists(dir))
             {
                 Terminal.Writeln($"Directory '{dir}' doesn't exists.", ConsoleColor.Red);
                 return;
             }
+            
             try
             {
                 Directory.GetDirectories(Path.GetFullPath(dir));
@@ -448,14 +460,7 @@ partial class ConsoleHost
                 Terminal.Writeln($"Access denied.", ConsoleColor.Red);
                 return;
             }
-            if (dir == "..")
-            {
-                if (CurrentPath.Count(c => c == sep) != 1)
-                    CurrentPath = CurrentPath[0..CurrentPath.LastIndexOf(sep)];
-                else
-                    CurrentPath = CurrentPath[0..(CurrentPath.IndexOf(':') + 1)] + sep;
-                return;
-            }
+            
             CurrentPath = GetCorrectCasePath(Path.GetFullPath(dir));
         }, (1, 1)));
         Commands.Add("dir", new((arg) =>
@@ -909,5 +914,13 @@ partial class ConsoleHost
             if (LastException != null)
                 Terminal.Writeln(LastException.ToString(), ConsoleColor.White);
         }, (0, 0), Hidden: true));
+        Commands.Add("debug-throw", new((arg) =>
+        {
+            if (arg.Length == 0)
+                throw new Exception("debug");
+            Type type = Type.GetType(arg[0].ToString());
+            if (type == null) return;
+            throw (Exception)Activator.CreateInstance(type);
+        }, (0, 1), [STRING], Hidden: true));
     }
 }
