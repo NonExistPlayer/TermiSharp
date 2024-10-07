@@ -55,15 +55,20 @@ internal sealed class AutoCompleteHandler : IAutoCompleteHandler
                     c[(c.LastIndexOf('\\') + 1)..] + 
                     (c[(c.LastIndexOf('\\') + 1)..].Contains(' ') ? '"' : ""),
                     $"{BLUE}{c[(c.LastIndexOf('\\') + 1)..]}{RESET}")).ToList();
-        if (MainHost.SubCommands.TryGetValue(words[0], out string[]? sc))
+        if (MainHost.Commands.TryGetValue(words[0], out Command com))
+            return com
+                .SubCommands
+                .Select(c => new Completion($"{words[0]} {c}", $"{YELLOW}{c}{RESET}"))
+                .ToList();
+        if (Tools.AppVerbs.TryGetValue(words[0], out string[]? sc))
             return sc
                 .Where(c => words.Length <= 1 || c.StartsWith(words[1]))
                 .Select(c => new Completion($"{words[0]} {c}", $"{YELLOW}{c}{RESET}")).ToList();
-        return MainHost.NHCommands.Keys
+        return Tools.NHCommands.Keys
             .Where(c => c.StartsWith(text))
             .Select(c => new Completion(c, $"{YELLOW}{c}{RESET}"))
             .Concat(
-                MainHost.GetLocalExes()
+                Tools.GetLocalExes()
                     .Where(e => e.StartsWith(text))
                     .Select(e => new Completion(Path.GetFileNameWithoutExtension(e), $"{GREEN}{e}{RESET}"))
             )

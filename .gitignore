@@ -1,11 +1,9 @@
-.vs/
 Publish/
-src/.vs/
-src/bin/
-src/obj/
-src/Properties/
-modules/LunaPlayerAPI/.vs/
-modules/LunaPlayerAPI/bin/
-modules/LunaPlayerAPI/obj/
-modules/TClient/
+**/.vs/
+**/bin/
+**/obj/
+**/Properties/
+# Попытка сделать среду Bash в TermiSharp.
+# На этапе разработки...
+modules/BashShell/
 *.tss

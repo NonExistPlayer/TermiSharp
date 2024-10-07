@@ -9,7 +9,8 @@ public readonly struct Command(Action<object[]>? Handler,
     (byte Min, byte Max) ArgRange,
     Type[]? ArgTypes = null,
     MethodInfo? OtherHandler = null,
-    bool Hidden = false)
+    bool Hidden = false,
+    string[]? SubCommands = null)
 {
     public readonly Action<object[]>? Handler { get; init; } = Handler;
     public void Call(string[] arg)
@@ -70,4 +71,5 @@ public readonly struct Command(Action<object[]>? Handler,
     public readonly MethodInfo? OtherHandler = OtherHandler;
     public readonly Type[]? ArgTypes = ArgTypes;
     public readonly bool Hidden = Hidden;
+    public readonly string[] SubCommands = SubCommands ?? [];
 }

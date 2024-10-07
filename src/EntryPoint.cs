@@ -8,16 +8,27 @@ namespace TermiSharp;
 
 public static class EntryPoint
 {
-    public static ConsoleHost MainHost { get; private set; }
+    public static ConsoleHostBase MainHost
+    {
+        get => _mainhost;
+        set
+        {
+            if (_mainhost != null)
+                _mainhost.IsRunning = false;
+            _mainhost = value;
+        }
+    }
     public static Exception? LastException { get; private set; }
+    private static ConsoleHostBase _mainhost;
+
     internal static void Main(string[] _args)
     {
         Random rnd = new();
-        MainHost = new ConsoleHost();
+        _mainhost = new ConsoleHost();
         AppDomain.CurrentDomain.UnhandledException += (s, e) => ExceptionHandler((Exception)e.ExceptionObject);
         Parser parser = new(with => with.AutoVersion = false);
         Options? args = parser.ParseArguments<Options>(_args).Value;
-        MainHost.Run(args);
+        ((ConsoleHost)_mainhost).Run(args);
     }
 
     internal static void ExceptionHandler(Exception ex)

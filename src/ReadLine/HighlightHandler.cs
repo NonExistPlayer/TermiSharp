@@ -18,10 +18,23 @@ internal sealed class HighlightHandler : IHighlightHandler
     public string Highlight(string text)
     {
         string[] words = text.Split(' ');
-        if (MainHost.SubCommands.TryGetValue(words[0], out string[]? value) && words.Length > 1)
+        if (MainHost
+            .Commands
+            .Select(c => new KeyValuePair<string, string[]>(c.Key, c.Value.SubCommands))
+            .ToDictionary()
+            .TryGetValue(words[0], out string[]? sc) && words.Length > 1)
         {
             string incorrect = RED;
-            if (MainHost.GetExePath(words[0]) != null)
+            if (Tools.GetExePath(words[0]) != null)
+                incorrect = "";
+            text = text.Insert(words[0].Length + 1, sc.Contains(words[1]) ? YELLOW : incorrect);
+            words = text.Split(' ');
+            text = text.Insert(words[0].Length + words[1].Length + 1, RESET);
+        }
+        if (Tools.AppVerbs.TryGetValue(words[0], out string[]? value) && words.Length > 1)
+        {
+            string incorrect = RED;
+            if (Tools.GetExePath(words[0]) != null)
                 incorrect = "";
             text = text.Insert(words[0].Length + 1, value.Contains(words[1]) ? YELLOW : incorrect);
             words = text.Split(' ');
@@ -62,7 +75,7 @@ internal sealed class HighlightHandler : IHighlightHandler
 
             text = text.Insert(0, YELLOW);
         }
-        else if (MainHost.GetExePath(words[0]) != null)
+        else if (Tools.GetExePath(words[0]) != null)
         {
             text = text.Insert(words[0].Length, RESET);
             text = text.Insert(0, GREEN);

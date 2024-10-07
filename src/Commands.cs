@@ -5,6 +5,7 @@ using System.Data;
 using System.Reflection;
 using TermiSharp.ReadLine;
 using System.Management;
+using TermiSharp.Attributes;
 
 #nullable disable warnings
 
@@ -12,39 +13,6 @@ namespace TermiSharp;
 
 partial class ConsoleHost
 {
-    internal readonly Dictionary<string, string[]> SubCommands = [];
-
-    public ConsoleHost()
-    {
-        bool ExeExists(string exe)
-        {
-            foreach (string path in ExePath)
-                if (Directory.Exists(path))
-                    foreach (string file in Directory.GetFiles(path))
-                        if (Path.GetFileName(file) == exe + ".exe")
-                            return true;
-            return false;
-        }
-
-        SubCommands.Add("module", ["init", "list", "help"]);
-        SubCommands.Add("config", ["set", "get", "add", "rem", "list", "help"]);
-        if (OperatingSystem.IsWindows() && ExeExists("winget"))
-            SubCommands.Add("winget", ["install", "show", "source", "search",
-            "list", "upgrade", "uninstall", "hash", "validate", "settings",
-            "features", "export", "import", "pin", "configure", "download",
-            "repair"]);
-        if (ExeExists("git"))
-            SubCommands.Add("git", ["clone", "init", "add", "mv", "restore",
-            "rm", "bisect", "diff", "grep", "log", "show", "status",
-            "branch", "commit", "merge", "rebase", "reset", "switch", "tag",
-            "fetch", "pull", "push"]);
-        if (ExeExists("dotnet"))
-            SubCommands.Add("dotnet", ["add", "build", "build-server", 
-            "clean", "format", "help", "list", "msbuild", "new", "nuget",
-            "pack", "publish", "remove", "restore", "run", "sdk", "sln",
-            "store", "tool", "vstest", "workload"]);
-    }
-
     void Init()
     {
         var INT = typeof(int);
@@ -68,32 +36,16 @@ partial class ConsoleHost
                 if (File.Exists(s) && video.Contains(s[(s.Length - 4)..s.Length])) return "Video";
                 if (File.Exists(s) && image.Contains(s[(s.Length - 4)..s.Length])) return "Image";
             }
-            //if (s.StartsWith("https://"))
-            //    if (IsSiteAvailable(s[8..])) return "Site";
-            //if (s.StartsWith("http://"))
-            //    if (IsSiteAvailable(s[7..])) return "Site";
             if (File.Exists(s)) return "File";
             if (Environment.GetLogicalDrives().Select(d => d[0..(d.Length - 1)]).Contains(s)) return "Drive";
             if (Directory.Exists(s)) return "Dir";
-            if (Commands.ContainsKey(s)) return "Command";
-            if (GetExePath(s) != null) return "ExePath";
+            if (_commands.ContainsKey(s)) return "Command";
+            if (Tools.GetExePath(s) != null) return "ExePath";
             return null;
         }
 
-        //static bool IsSiteAvailable(string site)
-        //{
-        //    try
-        //    {
-        //        return new Ping().Send(site, 1, new byte[32], new()).Status == IPStatus.Success;
-        //    }
-        //    catch
-        //    {
-        //        return false;
-        //    }
-        //}
-
-        Commands.Add("clear", new((arg) => { Console.Clear(); }, (0, 0)));
-        Commands.Add("c", new((arg) => {
+        _commands.Add("clear", new((arg) => { Console.Clear(); }, (0, 0)));
+        _commands.Add("c", new((arg) => {
             string expression = string.Join(' ', arg);
             try
             {
@@ -108,7 +60,7 @@ partial class ConsoleHost
                 Terminal.Writeln("Invalid expression.", ConsoleColor.Red);
             }
         }, (1, 255)));
-        Commands.Add("config", new((arg) =>
+        _commands.Add("config", new((arg) =>
         {
             switch (arg[0].ToString())
             {
@@ -227,23 +179,23 @@ partial class ConsoleHost
                     ]);
                     break;
                 default:
-                    Terminal.Writeln("Unknown command.\nTip: Type `config help` to get list of \"config\" commands.", ConsoleColor.Red);
+                    Terminal.Writeln("Unknown command.\nTip: Type `config help` to get list of \"config\" _commands.", ConsoleColor.Red);
                     return;
             }
-        }, (1, 3)));
-        Commands.Add("hclear", new((arg) => {
+        }, (1, 3), SubCommands: ["set", "get", "add", "rem", "list", "help"]));
+        _commands.Add("hclear", new((arg) => {
             HistoryHandler.History.Clear();
             if (HistoryHandler.History.Count == 0)
                 File.Delete($"{Path.GetDirectoryName(Environment.ProcessPath)}\\.history");
         }, (0, 0)));
-        Commands.Add("make", new((arg) => { File.Create(arg[0].ToString()).Close(); }, (1, 1)));
-        Commands.Add("mkdir", new((arg) => { Directory.CreateDirectory(arg[0].ToString()); }, (1, 1)));
-        Commands.Add("exit", new((arg) => {
+        _commands.Add("mkf", new((arg) => { File.Create(arg[0].ToString()).Close(); }, (1, 1)));
+        _commands.Add("mkdir", new((arg) => { Directory.CreateDirectory(arg[0].ToString()); }, (1, 1)));
+        _commands.Add("exit", new((arg) => {
             if (arg.Length > 0)
                 Environment.Exit(int.Parse((string)arg[0]));
             Environment.Exit(0);
         }, (0, 1), [INT]));
-        Commands.Add("restart", new((arg) => {
+        _commands.Add("restart", new((arg) => {
             ProcessStartInfo info = new()
             {
                 FileName = Environment.ProcessPath,
@@ -252,11 +204,11 @@ partial class ConsoleHost
             Process.Start(info);
             Environment.Exit(0);
         }, (0, 255)));
-        Commands.Add("out", new((arg) => {
+        _commands.Add("out", new((arg) => {
             Console.Write(arg[0].ToString());
         }, (1, 1)));
-        Commands.Add("outln", new((arg) => { Console.WriteLine(arg[0]); }, (1, 1)));
-        Commands.Add("ver", new((arg) => {
+        _commands.Add("outln", new((arg) => { Console.WriteLine(arg[0]); }, (1, 1)));
+        _commands.Add("ver", new((arg) => {
             if (Config.SimplifiedVersionWindow)
             {
                 Console.WriteLine($"TermiSharp {Version}\nby NonExistPlayer");
@@ -318,7 +270,7 @@ partial class ConsoleHost
                     $"   {GetIcon("\ueabe  ")}Processor    : {cpu["Name"]}",
                     $"   {GetIcon("\ue79d  ")}BIOS Version : {bios["Version"]}",
                     $"   {GetIcon("\ueabe  ")}GPU          : {gpu["Name"]}",
-                    $"   {GetIcon("\uf03e  ")}GPU Memory   : {GetLength(long.Parse(gpu["AdapterRAM"].ToString()))}",
+                    $"   {GetIcon("\uf03e  ")}GPU Memory   : {Tools.GetLength(long.Parse(gpu["AdapterRAM"].ToString()))}",
                     $"   {GetIcon("\uefc5  ")}RAM          : {availableMemory:F2} GB / {totalMemory:F2} GB"
                 ]);
             }
@@ -352,7 +304,7 @@ partial class ConsoleHost
             Console.WriteLine();
             Console.CursorVisible = true;
         }, (0, 0)));
-        Commands.Add("see", new((arg) => {
+        _commands.Add("see", new((arg) => {
             if (!File.Exists(arg[0].ToString()))
             {
                 Terminal.Writeln("Specified file does not exist.", ConsoleColor.Red);
@@ -391,7 +343,7 @@ partial class ConsoleHost
             else
                 Terminal.Writeln("The wrong type of argument or arguments.\n    Argument 1, Excepted: TermiSharp.Range OR System.Int32", ConsoleColor.Red);
         }, (1, 2)));
-        Commands.Add("see-bin", new((arg) =>
+        _commands.Add("see-bin", new((arg) =>
         {
             if (!File.Exists(arg[0].ToString()))
             {
@@ -400,7 +352,7 @@ partial class ConsoleHost
             Console.WriteLine(
                 BitConverter.ToString(File.ReadAllBytes(arg[0].ToString())).Replace("-", " "));
         }, (1, 1)));
-        Commands.Add("see-meta", new((arg) =>
+        _commands.Add("see-meta", new((arg) =>
         {
             if (!File.Exists(arg[0].ToString()))
             {
@@ -437,7 +389,7 @@ partial class ConsoleHost
 
             Terminal.DrawTable(table);
         }, (1, 1)));
-        Commands.Add("cd", new((arg) =>
+        _commands.Add("cd", new((arg) =>
         {
             string dir = arg[0].ToString();
             if (dir == "..")
@@ -461,9 +413,9 @@ partial class ConsoleHost
                 return;
             }
             
-            CurrentPath = GetCorrectCasePath(Path.GetFullPath(dir));
+            CurrentPath = Tools.GetCorrectCasePath(Path.GetFullPath(dir));
         }, (1, 1)));
-        Commands.Add("dir", new((arg) =>
+        _commands.Add("dir", new((arg) =>
         {
             FileInfo[] files = Directory
                 .GetFiles(CurrentPath)
@@ -495,8 +447,8 @@ partial class ConsoleHost
                     largest[1] = f.CreationTime.ToString().Length;
                 if (f.LastWriteTime.ToString().Length > largest[2])
                     largest[2] = f.LastWriteTime.ToString().Length;
-                if (GetLength(f.Length).Length > largest[3])
-                    largest[3] = GetLength(f.Length).Length;
+                if (Tools.GetLength(f.Length).Length > largest[3])
+                    largest[3] = Tools.GetLength(f.Length).Length;
             }
             largest[0] += 3;
             largest[1] += 5;
@@ -505,7 +457,7 @@ partial class ConsoleHost
             info.Add(string.Join('\n',
                 files
                 .Select(f => $"{f.Name}{new string(' ', largest[0] - f.Name.Length)}" +
-                $"{GetLength(f.Length)}{new string(' ', largest[3] - GetLength(f.Length).Length)}" +
+                $"{Tools.GetLength(f.Length)}{new string(' ', largest[3] - Tools.GetLength(f.Length).Length)}" +
                 $"{f.CreationTime}{new string(' ', largest[1] - f.CreationTime.ToString().Length)}" +
                 $"{f.LastWriteTime}{new string(' ', largest[2] - f.LastWriteTime.ToString().Length)}")
             ));
@@ -554,7 +506,7 @@ partial class ConsoleHost
 
             //Console.Write('\n');
         }, (0, 0)));
-        Commands.Add("module", new((arg) =>
+        _commands.Add("module", new((arg) =>
         {
             switch (arg[0].ToString())
             {
@@ -564,11 +516,59 @@ partial class ConsoleHost
                         Terminal.Writeln("Requires one more argument", ConsoleColor.Red);
                         return;
                     }
-                    ModuleInit(arg[1].ToString());
+                    string modulename = arg[1].ToString();
+                    string firstPath = Path.GetDirectoryName(Environment.ProcessPath) + "\\Modules\\" + modulename + $"\\bin\\Debug\\net8.0\\{modulename}.dll";
+                    string secondPath = Path.GetDirectoryName(Environment.ProcessPath) + $"\\Modules\\{modulename}.dll";
+                    string thirdPath = Path.GetDirectoryName(Environment.ProcessPath) + $"\\Modules\\{modulename}\\{modulename}.dll";
+                    Assembly asm;
+                    if (File.Exists(firstPath))
+                        asm = Assembly.LoadFrom(firstPath);
+                    else if (File.Exists(secondPath))
+                        asm = Assembly.LoadFrom(secondPath);
+                    else if (File.Exists(thirdPath))
+                        asm = Assembly.LoadFrom(thirdPath);
+                    else if (File.Exists(modulename))
+                        asm = Assembly.LoadFrom(modulename);
+                    else
+                    {
+                        Terminal.Writeln($"Can not find the module `{modulename}`", ConsoleColor.Red);
+                        return;
+                    }
+                    Type module = asm.GetType($"{modulename}.Module");
+                    MethodInfo? init = module.GetMethod("Init");
+                    MethodInfo? uninit = module.GetMethod("Uninit");
+                    var methods = module.GetMethods(BindingFlags.Public | BindingFlags.Static);
+                    foreach (var method in methods)
+                    {
+                        if (method.IsDefined(typeof(NotACommandAttribute), false))
+                            continue;
+                        byte max = 0, min = 0;
+                        string name = method.Name;
+                        max = (byte)(min + method.GetParameters().Count(p => p.HasDefaultValue));
+
+                        IEnumerable<Type> types = method.GetParameters().Select(p => p.ParameterType);
+                        if (method.IsDefined(typeof(OverrideCommandAttribute), false))
+                        {
+                            name = method.GetCustomAttribute<OverrideCommandAttribute>().Command;
+                            _commands.Remove(name);
+                        }
+                        if (method.IsDefined(typeof(CustomCommandNameAttribute), false))
+                            name = method.GetCustomAttribute<CustomCommandNameAttribute>().CommandName;
+                        if (_commands.ContainsKey(method.Name))
+                            name = $"{modulename}.{name}";
+                        _commands.Add(name, new(null, (min, max), types.ToArray(), method, 
+                            Hidden: method.IsDefined(typeof(HiddenCommandAttribute), false),
+                            SubCommands: method.IsDefined(typeof(SubCommandAttribute), false) ? 
+                                method.GetCustomAttributes<SubCommandAttribute>().Select(a => a.SubCommand).ToArray()
+                                : []));
+                    }
+                    init?.Invoke(null, null);
+                    if (uninit != null)
+                        AppDomain.CurrentDomain.ProcessExit += (s, e) => uninit.Invoke(null, null);
                     break;
                 case "list":
                     List<string> inscribed = [];
-                    Command[] commands = Commands.Values.Where(c => {
+                    Command[] commands = _commands.Values.Where(c => {
                         if (c.OtherHandler == null) return false;
                         if (inscribed.Contains(c.OtherHandler.DeclaringType.Namespace)) return false;
                         inscribed.Add(c.OtherHandler.DeclaringType.Namespace);
@@ -597,11 +597,11 @@ partial class ConsoleHost
                     ]);
                     break;
                 default:
-                    Terminal.Writeln("Unknown command.\nTip: Type `module help` to get list of \"module\" commands.", ConsoleColor.Red);
+                    Terminal.Writeln("Unknown command.\nTip: Type `module help` to get list of \"module\" _commands.", ConsoleColor.Red);
                     return;
             }
-        }, (1, 3)));
-        Commands.Add("info", new((arg) =>
+        }, (1, 3), SubCommands: ["init", "list", "help"]));
+        _commands.Add("info", new((arg) =>
         {
             Frame display = [];
             switch (INFO(arg[0].ToString()))
@@ -647,7 +647,7 @@ partial class ConsoleHost
                         $"Information of `{f}` as File:",
                         $"Name             : {Path.GetFileNameWithoutExtension(f)}",
                         $"Extension        : {info.Extension}",
-                        $"Size             : {GetLength(info.Length)}",
+                        $"Size             : {Tools.GetLength(info.Length)}",
                         $"Last Write Time  : {info.LastAccessTime}",
                         $"Last Access Time : {info.LastAccessTime}",
                         $"Access Denied    : {accessdenied}",
@@ -686,7 +686,7 @@ partial class ConsoleHost
                         $"Information of `{f}` as Audio:",
                         $"Name             : {Path.GetFileNameWithoutExtension(f)}",
                         $"Extension        : {info.Extension}",
-                        $"Size             : {GetLength(info.Length)}",
+                        $"Size             : {Tools.GetLength(info.Length)}",
                         $"Last Write Time  : {info.LastAccessTime}",
                         $"Last Access Time : {info.LastAccessTime}",
                          "[Audio]",
@@ -730,7 +730,7 @@ partial class ConsoleHost
                         $"Information of `{f}` as Video:",
                         $"Name             : {Path.GetFileNameWithoutExtension(f)}",
                         $"Extension        : {info.Extension}",
-                        $"Size             : {GetLength(info.Length)}",
+                        $"Size             : {Tools.GetLength(info.Length)}",
                         $"Last Write Time  : {info.LastAccessTime}",
                         $"Last Access Time : {info.LastAccessTime}",
                          "[Video]",
@@ -773,7 +773,7 @@ partial class ConsoleHost
                     {
                         display.AddRange([
                             $"Information of `{drinfo.VolumeLabel} ({arg[0]})` as Drive:",
-                            $"{GetLength(drinfo.AvailableFreeSpace)} / {GetLength(drinfo.TotalSize)}",
+                            $"{Tools.GetLength(drinfo.AvailableFreeSpace)} / {Tools.GetLength(drinfo.TotalSize)}",
                             $"File System : {drinfo.DriveFormat}",
                             $"Type        : {drinfo.DriveType}",
                         ]);
@@ -789,7 +789,7 @@ partial class ConsoleHost
             }
             display.Draw();
         }, (1, 1)));
-        Commands.Add("rm", new((arg) =>
+        _commands.Add("rm", new((arg) =>
         {
             string f = arg[0].ToString();
             if (File.Exists(f))
@@ -827,11 +827,11 @@ partial class ConsoleHost
                 Terminal.Writeln($"`{f}` is not a folder or file", ConsoleColor.Red);
             }
         }, (1, 1)));
-        Commands.Add("sleep", new((arg) =>
+        _commands.Add("sleep", new((arg) =>
         {
             Thread.Sleep(int.Parse(arg[0].ToString()));
         }, (1, 1), [INT]));
-        Commands.Add("cp", new((arg) =>
+        _commands.Add("cp", new((arg) =>
         {
             string f = arg[0].ToString();
             string to = arg[1].ToString();
@@ -849,7 +849,7 @@ partial class ConsoleHost
                     Microsoft.VisualBasic.FileIO.FileSystem.CopyDirectory(Path.GetFullPath(f), to + Path.GetDirectoryName(f));
             })) return;
         }, (2, 2)));
-        Commands.Add("mv", new((arg) =>
+        _commands.Add("mv", new((arg) =>
         {
             string f = arg[0].ToString();
             string to = arg[1].ToString();
@@ -867,7 +867,7 @@ partial class ConsoleHost
                     Microsoft.VisualBasic.FileIO.FileSystem.MoveDirectory(Path.GetFullPath(f), to);
             })) return;
         }, (2, 2)));
-        Commands.Add("help", new((arg) =>
+        _commands.Add("help", new((arg) =>
         {
             List<string[]> table = [
                 ["Command", "Argument Range", "Arguments Type", "Module"]
@@ -876,7 +876,7 @@ partial class ConsoleHost
             if (arg.Length > 0)
             {
                 string com = arg[0].ToString();
-                if (!Commands.TryGetValue(com, out Command val))
+                if (!_commands.TryGetValue(com, out Command val))
                 {
                     Terminal.Writeln("Command does not exist.", ConsoleColor.Red);
                     return;
@@ -888,8 +888,8 @@ partial class ConsoleHost
             }
             else
             {
-                foreach (var command in NHCommands.Values)
-                    table.Add([Commands.FindKey(command), command.ArgRange.ToString(), command.ArgTypes != null ? '[' + string.Join(',',
+                foreach (var command in Tools.NHCommands.Values)
+                    table.Add([_commands.FindKey(command), command.ArgRange.ToString(), command.ArgTypes != null ? '[' + string.Join(',',
                     command.ArgTypes.Select(t => t.Name != "Object" ? t.Name : "Any")) + ']'
                     : "<Any>",
                     command.OtherHandler != null ? command.OtherHandler.DeclaringType.Namespace : "std"]);
@@ -897,11 +897,17 @@ partial class ConsoleHost
 
             Terminal.DrawTable(table);
         }, (0, 1), [STRING]));
+        _commands.Add("lasterr", new((arg) =>
+        {
+            if (LastException != null)
+                Terminal.Writeln(LastException.ToString(), ConsoleColor.White);
+        }, (0, 0), Hidden: true));
         // Debug
-        Commands.Add("debug-lexes", new((arg) => { Terminal.Writeln(MainHost.GetLocalExes().ToArray(), ' '); }, (0, 0), Hidden: true));
-        Commands.Add("debug-varlist", new((arg) => { Terminal.Writeln(MainHost.Variables.Select(v => $"{v.Key}={v.Value}").ToArray(), '\n'); }, (0, 0), Hidden: true));
-        Commands.Add("debug-findexe", new((arg) => {
-            foreach (string path in ExePath)
+#if DEBUG
+        _commands.Add("debug-lexes", new((arg) => { Terminal.Writeln(Tools.GetLocalExes().ToArray(), ' '); }, (0, 0), Hidden: true));
+        //_commands.Add("debug-varlist", new((arg) => { Terminal.Writeln(MainHost.Variables.Select(v => $"{v.Key}={v.Value}").ToArray(), '\n'); }, (0, 0), Hidden: true));
+        _commands.Add("debug-findexe", new((arg) => {
+            foreach (string path in Tools.ExePath)
                 if (Directory.Exists(path))
                     foreach (string file in Directory.GetFiles(path))
                     {
@@ -909,12 +915,7 @@ partial class ConsoleHost
                             Terminal.Writeln(file, ConsoleColor.White);
                     }
         }, (1, 1), [STRING], Hidden: true));
-        Commands.Add("debug-lasterr", new((arg) => 
-        {
-            if (LastException != null)
-                Terminal.Writeln(LastException.ToString(), ConsoleColor.White);
-        }, (0, 0), Hidden: true));
-        Commands.Add("debug-throw", new((arg) =>
+        _commands.Add("debug-throw", new((arg) =>
         {
             if (arg.Length == 0)
                 throw new Exception("debug");
@@ -922,5 +923,6 @@ partial class ConsoleHost
             if (type == null) return;
             throw (Exception)Activator.CreateInstance(type);
         }, (0, 1), [STRING], Hidden: true));
+#endif
     }
 }

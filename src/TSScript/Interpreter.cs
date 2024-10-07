@@ -160,36 +160,10 @@ internal static class Interpreter
         {
             if (bool.TryParse(condition, out bool result))
                 return result;
-            if (condition.StartsWith('@') || condition.StartsWith("!@"))
-            {
-                string varname = condition.StartsWith("!@") ? condition[2..] : condition[1..];
-                if (!MainHost.Variables.TryGetValue(varname, out object? value))
-                {
-                    errMessage = "variable does not exist.";
-                    return false;
-                }
-                if (value is bool res)
-                    if (condition.StartsWith("!@"))
-                        return !res;
-                    else
-                        return res;
-                errMessage = "variable is not boolean";
-                return false;
-            }
         }
         if (words.Length == 3)
         {
             string? firstValue = null, secondValue = null;
-            if (words[0].StartsWith('@'))
-            {
-                string varname = words[0][1..];
-                if (!MainHost.Variables.TryGetValue(varname, out object? value))
-                {
-                    errMessage = "variable does not exist.";
-                    return false;
-                }
-                firstValue = value.ToString() ?? "<NULL>";
-            }
             if (words[0].StartsWith('$'))
             {
                 string? value = Environment.GetEnvironmentVariable(words[0][1..]);
@@ -200,16 +174,6 @@ internal static class Interpreter
                     return false;
                 }
                 firstValue = value.ToString() ?? "<NULL>";
-            }
-            if (words[2].StartsWith('@'))
-            {
-                string varname = words[2][1..];
-                if (!MainHost.Variables.TryGetValue(varname, out object? value))
-                {
-                    errMessage = "variable does not exist.";
-                    return false;
-                }
-                secondValue = value.ToString() ?? "<NULL>";
             }
             if (words[2].StartsWith('$'))
             {

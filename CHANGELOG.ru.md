@@ -36,3 +36,8 @@
 * Добавлено отображение текущей ветки в репозиториях.
 * Исправлено наименование [`HiddenCommandAttribute`](src/Attributes/HiddenCommandAttribute.cs) из пространства имён [`TermiSharp.Attributes`](src/Attributes/).
 * Добавлено выполнение TSS (TermiSharpScript) скриптов.
+# 1.1.2
+* Теперь все debug команды будут доступны только в Debug сборке.
+* Команда `debug-lasterr` теперь `lasterr`.
+* Команда `make` теперь `mkf`.
+* Теперь в папке с исполняемым файлом TermiSharp если будет находится `autoexec.tss`, то он будет выполнятся.

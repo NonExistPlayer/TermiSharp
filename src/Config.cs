@@ -6,7 +6,7 @@ namespace TermiSharp;
 
 public sealed class Config
 {
-    internal static readonly string ConfigPath = Path.GetDirectoryName(Environment.ProcessPath) + "\\config.json";
+    public static string ConfigPath { get; } = Path.GetDirectoryName(Environment.ProcessPath) + "/config.json";
     public static Config Load(string configPath) => JsonConvert.DeserializeObject<Config>(File.ReadAllText(configPath));
     
     public void Write() => File.WriteAllText(ConfigPath, JsonConvert.SerializeObject(this, Formatting.Indented));
