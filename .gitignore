@@ -3,7 +3,4 @@ Publish/
 **/bin/
 **/obj/
 **/Properties/
-# Попытка сделать среду Bash в TermiSharp.
-# На этапе разработки...
-modules/BashShell/
 *.tss

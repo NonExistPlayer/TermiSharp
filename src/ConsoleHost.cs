@@ -44,7 +44,7 @@ public partial class ConsoleHost : ConsoleHostBase, IRunnable
     
     public Dictionary<string, object> Variables = [];
     public BetterReadLine.ReadLine ReadLine;
-    public const string Version = "1.1.2-Dev1";
+    public const string Version = "1.1.2-Dev2";
     private Repository? repo;
 
     public override void Run() => Run(null);
@@ -95,7 +95,7 @@ public partial class ConsoleHost : ConsoleHostBase, IRunnable
                     Terminal.Writeln($"Failed to edit registry:\nHKEY_CURRENT_USER\\Console: VirtualTerminalLevel to 1 (0x00000001)\n{ex}", ConsoleColor.Red);
                 }
             }
-            Terminal.Writeln("Type `help` to get list of _commands.", ConsoleColor.White);
+            Terminal.Writeln("Type `help` to get list of commands.", ConsoleColor.White);
         }
         foreach (string module in Config.AutoModulesInit)
             HandleCommand($"module init {module}");

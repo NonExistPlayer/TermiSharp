@@ -20,6 +20,7 @@ internal sealed class HighlightHandler : IHighlightHandler
         string[] words = text.Split(' ');
         if (MainHost
             .Commands
+            .Where(c => c.Value.SubCommands.Length > 0)
             .Select(c => new KeyValuePair<string, string[]>(c.Key, c.Value.SubCommands))
             .ToDictionary()
             .TryGetValue(words[0], out string[]? sc) && words.Length > 1)

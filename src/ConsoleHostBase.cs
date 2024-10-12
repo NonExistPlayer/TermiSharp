@@ -18,7 +18,7 @@ public abstract class ConsoleHostBase : IRunnable
     public Config Config { get; protected set; } = new(); // default
     public ReadOnlyDictionary<string, Command> Commands => new(_commands);
 
-    protected Dictionary<string, Command> _commands { get; } = [];
+    protected Dictionary<string, Command> _commands = [];
     public virtual string CurrentPath
     {
         get => Environment.CurrentDirectory;
@@ -44,17 +44,16 @@ public abstract class ConsoleHostBase : IRunnable
             for (int i = 0; i < matches.Count; i++)
             {
                 if (matches[i].Groups[1].Success)
-                {
                     args[i] = matches[i].Groups[1].Value;
-                }
                 else if (matches[i].Groups[2].Success)
-                {
                     args[i] = matches[i].Groups[2].Value;
-                }
             }
         }
         if (_commands.TryGetValue(command, out Command com))
+        {
             com.Call(args);
+            return;
+        }
         if (path != null || File.Exists(command))
         {
             path ??= Path.GetFullPath(command);

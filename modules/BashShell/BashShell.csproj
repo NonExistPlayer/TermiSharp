@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <BaseOutputPath>..\..\src\bin\Debug\net8.0\Modules\BashShell\bin</BaseOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="ConsoleTools">
+      <HintPath>..\..\libs\ConsoleTools.dll</HintPath>
+    </Reference>
+    <Reference Include="termisharp">
+      <HintPath>..\..\src\bin\Debug\net8.0\termisharp.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

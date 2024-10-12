@@ -130,7 +130,7 @@ public static class Tools
                 fname.EndsWith("cmd") ||
                 fname.EndsWith("csx") ||
                 fname.EndsWith("tss"))
-                yield return fname[(fname.LastIndexOf('\\') + 1)..];
+                yield return Path.GetFileName(fname);
     }
     public static string GetCorrectCasePath(string path)
     {
